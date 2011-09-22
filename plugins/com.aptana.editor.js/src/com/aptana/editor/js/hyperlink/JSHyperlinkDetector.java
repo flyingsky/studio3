@@ -7,7 +7,6 @@
  */
 package com.aptana.editor.js.hyperlink;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdaptable;
@@ -23,6 +22,7 @@ import com.aptana.parsing.ast.IParseNode;
 
 public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 {
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.text.hyperlink.IHyperlinkDetector#detectHyperlinks(org.eclipse.jface.text.ITextViewer,
@@ -30,10 +30,24 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	 */
 	public IHyperlink[] detectHyperlinks(ITextViewer textViewer, IRegion region, boolean canShowMultipleHyperlinks)
 	{
-		List<IHyperlink> result = new ArrayList<IHyperlink>();
+		return detectHyperlinks(getEditor(textViewer), region, canShowMultipleHyperlinks);
+	}
+
+	/**
+	 * detectHyperlinks
+	 * 
+	 * @param editor
+	 * @param region
+	 * @param canShowMultipleHyperlinks
+	 * @return
+	 */
+	public IHyperlink[] detectHyperlinks(AbstractThemeableEditor editor, IRegion region,
+			boolean canShowMultipleHyperlinks)
+	{
+		List<IHyperlink> result = null;
 
 		// grab file service
-		FileService fileService = this.getFileService(textViewer);
+		FileService fileService = this.getFileService(editor);
 
 		if (fileService != null)
 		{
@@ -52,7 +66,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			}
 		}
 
-		return result.toArray(new IHyperlink[result.size()]);
+		return (result == null || result.size() == 0) ? null : result.toArray(new IHyperlink[result.size()]);
 	}
 
 	/**
@@ -79,9 +93,8 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	 * @param textViewer
 	 * @return
 	 */
-	protected FileService getFileService(ITextViewer textViewer)
+	protected FileService getFileService(AbstractThemeableEditor editor)
 	{
-		AbstractThemeableEditor editor = this.getEditor(textViewer);
 		FileService result = null;
 
 		if (editor != null)

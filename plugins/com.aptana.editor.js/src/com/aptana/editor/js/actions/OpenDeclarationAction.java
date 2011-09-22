@@ -12,10 +12,13 @@ import java.util.ResourceBundle;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextSelection;
 import org.eclipse.jface.text.Region;
+import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.ui.texteditor.ITextEditor;
 import org.eclipse.ui.texteditor.TextEditorAction;
 
+import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.js.JSSourceEditor;
+import com.aptana.editor.js.hyperlink.JSHyperlinkDetector;
 
 /**
  * OpenDeclarationAction
@@ -45,22 +48,14 @@ public class OpenDeclarationAction extends TextEditorAction
 		{
 			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			IRegion region = new Region(selection.getOffset(), 1);
+			JSHyperlinkDetector detector = new JSHyperlinkDetector();
+			IHyperlink[] hyperlinks = detector.detectHyperlinks((AbstractThemeableEditor) textEditor, region, false);
 
-			if (region.getLength() != 0)
+			if (hyperlinks != null && hyperlinks.length > 0)
 			{
-
+				hyperlinks[0].open();
 			}
-			// PHPHyperlinkDetector detector = new PHPHyperlinkDetector();
-			// IHyperlink[] hyperlinks = detector.detectHyperlinks((PHPSourceEditor) textEditor, region, false);
-			// if (hyperlinks != null && hyperlinks.length > 0)
-			// {
-			// hyperlinks[0].open();
-			// }
-			// else
-			// {
-			// StatusLineMessageTimerManager.setErrorMessage(Messages.OpenDeclarationAction_cannotOpenDeclataion, 3000L,
-			// true);
-			// }
+			// NOTE: PHP shows an error here, but I don't see the value in that
 		}
 	}
 }
