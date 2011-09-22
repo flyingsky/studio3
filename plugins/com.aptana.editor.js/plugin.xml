@@ -216,6 +216,23 @@
          </contentType>
       </hover>
    </extension>
+      <extension
+         point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectorTargets">
+      <target
+            id="com.aptana.editor.js.sourceCode"
+            name="JS Editor Hyperlink Target">
+      </target>
+   </extension>
+   <extension
+         point="org.eclipse.ui.workbench.texteditor.hyperlinkDetectors">
+      <hyperlinkDetector
+            activate="true"
+            class="com.aptana.editor.js.hyperlink.JSHyperlinkDetector"
+            id="com.aptana.editor.js.hyperlinkDetector"
+            name="Open Declaration"
+            targetId="com.aptana.editor.js.sourceCode">
+      </hyperlinkDetector>
+   </extension>
    <extension
          point="com.aptana.index.core.ui.indexViewContributors">
       <contributor
