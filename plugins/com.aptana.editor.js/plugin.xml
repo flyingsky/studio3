@@ -131,6 +131,12 @@
             id="com.aptana.editor.js.quick_outline"
             name="%command.quickoutline.name">
       </command>
+      <command
+            categoryId="org.eclipse.ui.category.navigate"
+            description="Open a selected JS element&apos;s declaration"
+            id="com.aptana.editor.js.openDeclaration"
+            name="Open Declaration">
+      </command>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
@@ -139,6 +145,12 @@
             contextId="com.aptana.editor.context"
             schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
             sequence="M1+O">
+      </key>
+      <key
+            commandId="com.aptana.editor.js.openDeclaration"
+            contextId="com.aptana.scripting.context"
+            schemeId="org.eclipse.ui.defaultAcceleratorConfiguration"
+            sequence="F3">
       </key>
    </extension>
    <extension

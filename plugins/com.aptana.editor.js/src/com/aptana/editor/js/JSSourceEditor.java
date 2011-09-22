@@ -7,6 +7,8 @@
  */
 package com.aptana.editor.js;
 
+import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.preference.IPreferenceStore;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.jface.viewers.ILabelProvider;
@@ -17,6 +19,8 @@ import org.eclipse.ui.texteditor.ChainedPreferenceStore;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.CommonEditorPlugin;
 import com.aptana.editor.common.text.reconciler.IFoldingComputer;
+import com.aptana.editor.js.actions.JSActions;
+import com.aptana.editor.js.actions.OpenDeclarationAction;
 import com.aptana.editor.js.internal.text.JSFoldingComputer;
 import com.aptana.editor.js.outline.JSOutlineContentProvider;
 import com.aptana.editor.js.outline.JSOutlineLabelProvider;
@@ -34,6 +38,38 @@ public class JSSourceEditor extends AbstractThemeableEditor
 
 		setSourceViewerConfiguration(new JSSourceViewerConfiguration(getPreferenceStore(), this));
 		setDocumentProvider(JSPlugin.getDefault().getJSDocumentProvider());
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.common.AbstractThemeableEditor#createActions()
+	 */
+	@Override
+	protected void createActions()
+	{
+		super.createActions();
+		IAction action = new OpenDeclarationAction(Messages.getResourceBundle(), this);
+		action.setActionDefinitionId(JSActions.OPEN_DECLARATION);
+		setAction(JSActions.OPEN_DECLARATION, action);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see org.eclipse.ui.texteditor.AbstractDecoratedTextEditor#editorContextMenuAboutToShow(org.eclipse.jface.action.
+	 * IMenuManager)
+	 */
+	@Override
+	protected void editorContextMenuAboutToShow(IMenuManager menu)
+	{
+		super.editorContextMenuAboutToShow(menu);
+
+		String openGroup = "group.open"; //$NON-NLS-1$
+		IAction action = getAction(JSActions.OPEN_DECLARATION);
+
+		if (action != null)
+		{
+			menu.appendToGroup(openGroup, action);
+		}
 	}
 
 	public static IPreferenceStore getChainedPreferenceStore()
