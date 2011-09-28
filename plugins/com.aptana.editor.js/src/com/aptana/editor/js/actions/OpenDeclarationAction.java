@@ -55,7 +55,7 @@ public class OpenDeclarationAction extends TextEditorAction
 			{
 				hyperlinks[0].open();
 			}
-			// NOTE: PHP shows an error here, but I don't see the value in that
+			// NOTE: PHP shows an error here. I'm not sure what value there is in that
 		}
 	}
 }
