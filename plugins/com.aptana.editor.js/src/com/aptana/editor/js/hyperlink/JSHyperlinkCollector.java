@@ -7,15 +7,14 @@
  */
 package com.aptana.editor.js.hyperlink;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
 import com.aptana.core.util.StringUtil;
+import com.aptana.editor.js.parsing.ast.IJSNodeTypes;
 import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
 import com.aptana.editor.js.parsing.ast.JSNode;
+import com.aptana.editor.js.parsing.ast.JSParseRootNode;
 import com.aptana.editor.js.parsing.ast.JSTreeWalker;
 import com.aptana.parsing.ast.IParseNode;
 
@@ -25,7 +24,7 @@ import com.aptana.parsing.ast.IParseNode;
 public class JSHyperlinkCollector extends JSTreeWalker
 {
 	private int offset;
-	private List<IHyperlink> hyperlinks;
+	private IHyperlink hyperlink;
 
 	/**
 	 * JSHyperlinkCollector
@@ -33,7 +32,6 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	public JSHyperlinkCollector(int offset)
 	{
 		this.offset = offset;
-		this.hyperlinks = new ArrayList<IHyperlink>();
 	}
 
 	/**
@@ -44,19 +42,19 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	 * @param type
 	 * @param text
 	 */
-	protected void addHyperlink(int start, int length, String type, String text)
+	protected void setHyperlink(int start, int length, String type, String text)
 	{
-		hyperlinks.add(new JSHyperlink(new Region(start, length), type, text));
+		hyperlink = new JSHyperlink(new Region(start, length), type, text);
 	}
 
 	/**
-	 * getHyperlinks
+	 * getHyperlink
 	 * 
 	 * @return
 	 */
-	public List<IHyperlink> getHyperlinks()
+	public IHyperlink getHyperlink()
 	{
-		return this.hyperlinks;
+		return hyperlink;
 	}
 
 	/*
@@ -66,7 +64,42 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	@Override
 	public void visit(JSIdentifierNode node)
 	{
-		addHyperlink(node.getStart(), node.getLength(), StringUtil.EMPTY, StringUtil.EMPTY);
+		if (node.contains(offset))
+		{
+			IParseNode parent = node.getParent();
+			boolean valid = false;
+
+			if (parent instanceof JSParseRootNode)
+			{
+				valid = true;
+			}
+			else if (parent instanceof JSNode)
+			{
+				switch (parent.getNodeType())
+				{
+					case IJSNodeTypes.CONSTRUCT:
+					case IJSNodeTypes.GET_PROPERTY:
+					case IJSNodeTypes.INVOKE:
+					case IJSNodeTypes.RETURN:
+					case IJSNodeTypes.STATEMENTS:
+						valid = true;
+						break;
+				}
+			}
+
+			if (valid)
+			{
+				int start = node.getStart();
+				int length = node.getLength();
+
+				if (node.getSemicolonIncluded())
+				{
+					--length;
+				}
+
+				setHyperlink(start, length, StringUtil.EMPTY, StringUtil.EMPTY);
+			}
+		}
 	}
 
 	/*
@@ -84,7 +117,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 				{
 					if (child instanceof JSNode)
 					{
-						((JSNode) node).accept(this);
+						((JSNode) child).accept(this);
 					}
 
 					break;

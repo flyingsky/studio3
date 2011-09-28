@@ -7,8 +7,6 @@
  */
 package com.aptana.editor.js.hyperlink;
 
-import java.util.List;
-
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
@@ -44,7 +42,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	public IHyperlink[] detectHyperlinks(AbstractThemeableEditor editor, IRegion region,
 			boolean canShowMultipleHyperlinks)
 	{
-		List<IHyperlink> result = null;
+		IHyperlink result = null;
 
 		// grab file service
 		FileService fileService = this.getFileService(editor);
@@ -62,11 +60,11 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 				((JSParseRootNode) ast).accept(collector);
 
 				// grab results
-				result = collector.getHyperlinks();
+				result = collector.getHyperlink();
 			}
 		}
 
-		return (result == null || result.size() == 0) ? null : result.toArray(new IHyperlink[result.size()]);
+		return (result == null) ? null : new IHyperlink[] { result };
 	}
 
 	/**
