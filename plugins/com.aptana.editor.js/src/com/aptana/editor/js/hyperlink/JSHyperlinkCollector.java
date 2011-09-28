@@ -10,8 +10,10 @@ package com.aptana.editor.js.hyperlink;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
+import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
 import com.aptana.editor.js.parsing.ast.JSTreeWalker;
 
 /**
@@ -32,11 +34,14 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	/**
 	 * addHyperlink
 	 * 
-	 * @param link
+	 * @param start
+	 * @param length
+	 * @param type
+	 * @param text
 	 */
-	protected void addHyperlink(IHyperlink link)
+	protected void addHyperlink(int start, int length, String type, String text)
 	{
-		this._hyperlinks.add(link);
+		this._hyperlinks.add(new JSHyperlink(new Region(start, length), type, text));
 	}
 
 	/**
@@ -47,5 +52,15 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	public List<IHyperlink> getHyperlinks()
 	{
 		return this._hyperlinks;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.parsing.ast.JSTreeWalker#visit(com.aptana.editor.js.parsing.ast.JSIdentifierNode)
+	 */
+	@Override
+	public void visit(JSIdentifierNode node)
+	{
+		this.addHyperlink(node.getStart(), node.getLength(), "A type", "Some text");
 	}
 }
