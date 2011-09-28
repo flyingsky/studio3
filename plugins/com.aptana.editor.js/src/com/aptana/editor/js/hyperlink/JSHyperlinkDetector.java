@@ -57,7 +57,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			if (ast instanceof JSParseRootNode)
 			{
 				// walk AST with custom TreeWalker
-				JSHyperlinkCollector collector = new JSHyperlinkCollector();
+				JSHyperlinkCollector collector = new JSHyperlinkCollector(region.getOffset());
 
 				((JSParseRootNode) ast).accept(collector);
 

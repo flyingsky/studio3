@@ -13,22 +13,27 @@ import java.util.List;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
+import com.aptana.core.util.StringUtil;
 import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
+import com.aptana.editor.js.parsing.ast.JSNode;
 import com.aptana.editor.js.parsing.ast.JSTreeWalker;
+import com.aptana.parsing.ast.IParseNode;
 
 /**
  * JSHyperlinkCollector
  */
 public class JSHyperlinkCollector extends JSTreeWalker
 {
-	List<IHyperlink> _hyperlinks;
+	private int offset;
+	private List<IHyperlink> hyperlinks;
 
 	/**
 	 * JSHyperlinkCollector
 	 */
-	public JSHyperlinkCollector()
+	public JSHyperlinkCollector(int offset)
 	{
-		this._hyperlinks = new ArrayList<IHyperlink>();
+		this.offset = offset;
+		this.hyperlinks = new ArrayList<IHyperlink>();
 	}
 
 	/**
@@ -41,7 +46,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	 */
 	protected void addHyperlink(int start, int length, String type, String text)
 	{
-		this._hyperlinks.add(new JSHyperlink(new Region(start, length), type, text));
+		hyperlinks.add(new JSHyperlink(new Region(start, length), type, text));
 	}
 
 	/**
@@ -51,7 +56,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	 */
 	public List<IHyperlink> getHyperlinks()
 	{
-		return this._hyperlinks;
+		return this.hyperlinks;
 	}
 
 	/*
@@ -61,6 +66,30 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	@Override
 	public void visit(JSIdentifierNode node)
 	{
-		this.addHyperlink(node.getStart(), node.getLength(), "A type", "Some text");
+		addHyperlink(node.getStart(), node.getLength(), StringUtil.EMPTY, StringUtil.EMPTY);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.parsing.ast.JSTreeWalker#visitChildren(com.aptana.editor.js.parsing.ast.JSNode)
+	 */
+	@Override
+	protected void visitChildren(JSNode node)
+	{
+		if (node.contains(offset))
+		{
+			for (IParseNode child : node)
+			{
+				if (child.contains(offset))
+				{
+					if (child instanceof JSNode)
+					{
+						((JSNode) node).accept(this);
+					}
+
+					break;
+				}
+			}
+		}
 	}
 }
