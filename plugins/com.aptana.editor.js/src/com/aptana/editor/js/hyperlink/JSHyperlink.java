@@ -29,9 +29,9 @@ public class JSHyperlink implements IHyperlink
 	private IRegion region;
 	private String type;
 	private String text;
-	private String filePath;
-	private int fileOffset;
-	private int selectionLength;
+
+	private String targetFilePath;
+	private IRegion targetFileRegion;
 
 	/**
 	 * JSHyperlink
@@ -61,9 +61,9 @@ public class JSHyperlink implements IHyperlink
 	 * 
 	 * @return
 	 */
-	public int getOffset()
+	public IRegion getTargetFileRegion()
 	{
-		return fileOffset;
+		return targetFileRegion;
 	}
 
 	/**
@@ -73,17 +73,7 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public String getPath()
 	{
-		return filePath;
-	}
-
-	/**
-	 * getSelectionLength
-	 * 
-	 * @return
-	 */
-	public int getSelectionLength()
-	{
-		return selectionLength;
+		return targetFilePath;
 	}
 
 	/*
@@ -110,11 +100,11 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public void open()
 	{
-		if (filePath != null)
+		if (targetFilePath != null)
 		{
 			try
 			{
-				File file = new File(new URI(filePath));
+				File file = new File(new URI(targetFilePath));
 				IEditorPart part = null;
 
 				if (file.exists())
@@ -123,7 +113,7 @@ public class JSHyperlink implements IHyperlink
 				}
 				else
 				{
-					IResource findMember = ResourcesPlugin.getWorkspace().getRoot().findMember(filePath);
+					IResource findMember = ResourcesPlugin.getWorkspace().getRoot().findMember(targetFilePath);
 
 					if (findMember != null && findMember.exists() && findMember instanceof IFile)
 					{
@@ -135,7 +125,7 @@ public class JSHyperlink implements IHyperlink
 				{
 					AbstractTextEditor editor = (AbstractTextEditor) part;
 
-					editor.selectAndReveal(fileOffset, selectionLength);
+					editor.selectAndReveal(targetFileRegion.getOffset(), targetFileRegion.getLength());
 				}
 			}
 			catch (Exception e)
@@ -153,7 +143,7 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public void setFilePath(String path)
 	{
-		filePath = path;
+		targetFilePath = path;
 	}
 
 	/**
@@ -161,18 +151,8 @@ public class JSHyperlink implements IHyperlink
 	 * 
 	 * @param offset
 	 */
-	public void setFileOffset(int offset)
+	public void setTargetFileRegion(IRegion region)
 	{
-		fileOffset = offset;
-	}
-
-	/**
-	 * setSelectionLength
-	 * 
-	 * @param length
-	 */
-	public void setSelectionLength(int length)
-	{
-		selectionLength = length;
+		targetFileRegion = region;
 	}
 }
