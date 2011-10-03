@@ -20,4 +20,9 @@ public interface IDebugScopes
 	 */
 	String CONTENT_ASSIST_TYPES = JSPlugin.PLUGIN_ID + "/debug/show_content_assist_types"; //$NON-NLS-1$
 
+	/**
+	 * Items related to open declaration and hyperlink detection
+	 */
+	String OPEN_DECLARATION_TYPES = JSPlugin.PLUGIN_ID + "/debug/show_open_declaration_types"; //$NON-NLS-1$
+
 }
