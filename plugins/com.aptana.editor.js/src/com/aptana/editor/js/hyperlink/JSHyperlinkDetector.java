@@ -145,8 +145,6 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 				IdeLog.logInfo(JSPlugin.getDefault(),
 						"Hyperlink type model element: " + element.toSource(), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
 
-				System.out.println(element.toSource());
-
 				List<String> documents = element.getDocuments();
 
 				if (documents != null && !documents.isEmpty())
