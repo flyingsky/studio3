@@ -55,17 +55,21 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	{
 		IHyperlink result = null;
 
-		// grab file service
-		FileService fileService = this.getFileService(editor);
-
-		if (fileService != null)
+		if (editor != null && region != null)
 		{
-			// grab AST
-			IParseNode ast = fileService.getParseResult();
+			// grab file service
+			FileService fileService = editor.getFileService();
 
-			if (ast instanceof JSParseRootNode)
+			if (fileService != null)
 			{
-				result = processAST(editor, ast, region.getOffset());
+				// grab AST
+				IParseNode ast = fileService.getParseResult();
+
+				if (ast instanceof JSParseRootNode)
+				{
+					// gather links
+					result = processAST(editor, (JSParseRootNode) ast, region.getOffset());
+				}
 			}
 		}
 
@@ -162,24 +166,6 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 		if (textViewer instanceof IAdaptable)
 		{
 			result = (AbstractThemeableEditor) ((IAdaptable) textViewer).getAdapter(AbstractThemeableEditor.class);
-		}
-
-		return result;
-	}
-
-	/**
-	 * getFileService
-	 * 
-	 * @param textViewer
-	 * @return
-	 */
-	protected FileService getFileService(AbstractThemeableEditor editor)
-	{
-		FileService result = null;
-
-		if (editor != null)
-		{
-			result = editor.getFileService();
 		}
 
 		return result;
