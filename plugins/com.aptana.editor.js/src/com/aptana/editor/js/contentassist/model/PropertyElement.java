@@ -361,20 +361,6 @@ public class PropertyElement extends BaseElement<PropertyElement.Property>
 	/**
 	 * toSource
 	 * 
-	 * @return
-	 */
-	public String toSource()
-	{
-		SourcePrinter printer = new SourcePrinter();
-
-		this.toSource(printer);
-
-		return printer.toString();
-	}
-
-	/**
-	 * toSource
-	 * 
 	 * @param printer
 	 */
 	public void toSource(SourcePrinter printer)

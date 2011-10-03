@@ -124,20 +124,6 @@ public class EventElement extends BaseElement
 	/**
 	 * toSource
 	 * 
-	 * @return
-	 */
-	public String toSource()
-	{
-		SourcePrinter printer = new SourcePrinter();
-
-		this.toSource(printer);
-
-		return printer.toString();
-	}
-
-	/**
-	 * toSource
-	 * 
 	 * @param printer
 	 */
 	public void toSource(SourcePrinter printer)
