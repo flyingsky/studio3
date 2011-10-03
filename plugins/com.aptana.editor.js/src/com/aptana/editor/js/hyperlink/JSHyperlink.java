@@ -13,19 +13,13 @@ import java.net.URI;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
-import org.eclipse.core.runtime.IPath;
-import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
-import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IEditorRegistry;
-import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.ide.IDE;
 import org.eclipse.ui.texteditor.AbstractTextEditor;
 
 import com.aptana.editor.common.AbstractThemeableEditor;
+import com.aptana.editor.common.util.EditorUtil;
 
 /**
  * JSHyperlink
@@ -37,6 +31,7 @@ public class JSHyperlink implements IHyperlink
 	private String text;
 	private String filePath;
 	private int fileOffset;
+	private int selectionLength;
 
 	/**
 	 * JSHyperlink
@@ -81,6 +76,16 @@ public class JSHyperlink implements IHyperlink
 		return filePath;
 	}
 
+	/**
+	 * getSelectionLength
+	 * 
+	 * @return
+	 */
+	public int getSelectionLength()
+	{
+		return selectionLength;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.text.hyperlink.IHyperlink#getTypeLabel()
@@ -99,26 +104,6 @@ public class JSHyperlink implements IHyperlink
 		return text;
 	}
 
-	/**
-	 * getEditorDescriptor
-	 * 
-	 * @param uri
-	 * @return
-	 */
-	private IEditorDescriptor getEditorDescriptor(URI uri)
-	{
-		IEditorRegistry editorReg = PlatformUI.getWorkbench().getEditorRegistry();
-
-		if (uri.getPath() == null || uri.getPath().equals("/") || uri.getPath().trim().equals("")) //$NON-NLS-1$ //$NON-NLS-2$
-		{
-			return null;
-		}
-
-		IPath path = new Path(uri.getPath());
-
-		return editorReg.getDefaultEditor(path.lastSegment());
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.text.hyperlink.IHyperlink#open()
@@ -134,7 +119,7 @@ public class JSHyperlink implements IHyperlink
 
 				if (file.exists())
 				{
-					part = openInEditor(file);
+					part = EditorUtil.openInEditor(file);
 				}
 				else
 				{
@@ -142,7 +127,7 @@ public class JSHyperlink implements IHyperlink
 
 					if (findMember != null && findMember.exists() && findMember instanceof IFile)
 					{
-						part = openInEditor(new File(((IFile) findMember).getLocationURI()));
+						part = EditorUtil.openInEditor(new File(((IFile) findMember).getLocationURI()));
 					}
 				}
 
@@ -150,7 +135,7 @@ public class JSHyperlink implements IHyperlink
 				{
 					AbstractTextEditor editor = (AbstractTextEditor) part;
 
-					editor.selectAndReveal(fileOffset, 0);
+					editor.selectAndReveal(fileOffset, selectionLength);
 				}
 			}
 			catch (Exception e)
@@ -159,31 +144,6 @@ public class JSHyperlink implements IHyperlink
 				e.printStackTrace();
 			}
 		}
-	}
-
-	private IEditorPart openInEditor(File file)
-	{
-		try
-		{
-			URI uri = file.toURI();
-			IEditorDescriptor desc = getEditorDescriptor(uri);
-			IWorkbenchPage page = PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage();
-
-			if (desc == null)
-			{
-				return IDE.openEditor(page, uri, IEditorRegistry.SYSTEM_EXTERNAL_EDITOR_ID, true);
-			}
-			else
-			{
-				return IDE.openEditor(page, uri, desc.getId(), true);
-			}
-		}
-		catch (Exception e)
-		{
-			//IdeLog.logError(PHPEditorPlugin.getDefault(), "Error open a file in the editor", e); //$NON-NLS-1$
-		}
-
-		return null;
 	}
 
 	/**
@@ -204,5 +164,15 @@ public class JSHyperlink implements IHyperlink
 	public void setFileOffset(int offset)
 	{
 		fileOffset = offset;
+	}
+
+	/**
+	 * setSelectionLength
+	 * 
+	 * @param length
+	 */
+	public void setSelectionLength(int length)
+	{
+		selectionLength = length;
 	}
 }
