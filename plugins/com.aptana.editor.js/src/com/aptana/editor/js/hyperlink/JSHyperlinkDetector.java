@@ -16,9 +16,13 @@ import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
+import com.aptana.core.logging.IdeLog;
+import com.aptana.core.util.StringUtil;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.parsing.FileService;
 import com.aptana.editor.common.util.EditorUtil;
+import com.aptana.editor.js.IDebugScopes;
+import com.aptana.editor.js.JSPlugin;
 import com.aptana.editor.js.contentassist.ASTUtil;
 import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
 import com.aptana.editor.js.contentassist.JSLocationIdentifier;
@@ -82,14 +86,12 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	 * @param offset
 	 * @return
 	 */
-	private IHyperlink processAST(AbstractThemeableEditor editor, IParseNode ast, int offset)
+	private IHyperlink processAST(AbstractThemeableEditor editor, JSParseRootNode ast, int offset)
 	{
-		IHyperlink result;
-
 		// walk AST to grab potential hyperlinks
 		JSHyperlinkCollector collector = new JSHyperlinkCollector(offset);
-		((JSParseRootNode) ast).accept(collector);
-		result = collector.getHyperlink();
+		ast.accept(collector);
+		IHyperlink result = collector.getHyperlink();
 
 		if (result != null)
 		{
@@ -109,12 +111,14 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 							identifier.getStatementNode());
 					Index index = EditorUtil.getIndex(editor);
 					URI location = EditorUtil.getURI(editor);
-					List<String> types = ASTUtil.getParentObjectTypes(index, location, node, getPropertyNode,
-							offset);
+					List<String> types = ASTUtil.getParentObjectTypes(index, location, node, getPropertyNode, offset);
 
 					if (types != null && !types.isEmpty())
 					{
 						String typeName = types.get(0);
+						IdeLog.logInfo(
+								JSPlugin.getDefault(),
+								"Hyperlink property types: " + StringUtil.join(", ", types), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$ //$NON-NLS-2$
 						JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
 
 						element = queryHelper.getType(index, typeName, true);
@@ -138,14 +142,20 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 
 			if (element != null)
 			{
+				IdeLog.logInfo(JSPlugin.getDefault(),
+						"Hyperlink type model element: " + element.toSource(), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
+
 				System.out.println(element.toSource());
 
 				List<String> documents = element.getDocuments();
 
 				if (documents != null && !documents.isEmpty())
 				{
+					IdeLog.logInfo(
+							JSPlugin.getDefault(),
+							"Hyperlink type model documents: " + StringUtil.join(", ", documents), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
+
 					((JSHyperlink) result).setFilePath(documents.get(0));
-					System.out.println(documents);
 				}
 			}
 		}
