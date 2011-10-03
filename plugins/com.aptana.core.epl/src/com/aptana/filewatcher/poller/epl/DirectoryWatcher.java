@@ -9,7 +9,7 @@
  *  aQute - initial implementation and ideas 
  *  IBM Corporation - initial adaptation to Equinox provisioning use
  *******************************************************************************/
-package com.aptana.filewatcher.poller;
+package com.aptana.filewatcher.poller.epl;
 
 import java.io.File;
 import java.util.HashSet;
@@ -20,7 +20,7 @@ import org.eclipse.osgi.util.NLS;
 
 import com.aptana.core.epl.CoreEPLPlugin;
 
-class DirectoryWatcher
+public class DirectoryWatcher
 {
 
 	private class WatcherThread extends Thread
@@ -81,7 +81,7 @@ class DirectoryWatcher
 	private WatcherThread watcher;
 	private boolean watchSubdirs;
 
-	DirectoryWatcher(File directory, boolean watchSubtree)
+	public DirectoryWatcher(File directory, boolean watchSubtree)
 	{
 		if (directory == null)
 			throw new IllegalArgumentException(Messages.null_folder);
@@ -90,17 +90,17 @@ class DirectoryWatcher
 		this.watchSubdirs = watchSubtree;
 	}
 
-	synchronized void addListener(DirectoryChangeListener listener)
+	public synchronized void addListener(DirectoryChangeListener listener)
 	{
 		listeners.add(listener);
 	}
 
-	synchronized void removeListener(DirectoryChangeListener listener)
+	public synchronized void removeListener(DirectoryChangeListener listener)
 	{
 		listeners.remove(listener);
 	}
 
-	void start()
+	public void start()
 	{
 		start(DEFAULT_POLL_FREQUENCY);
 	}
@@ -121,7 +121,7 @@ class DirectoryWatcher
 		watcher.start();
 	}
 
-	synchronized void stop()
+	private synchronized void stop()
 	{
 		if (watcher == null)
 			throw new IllegalStateException(Messages.thread_not_started);
@@ -130,7 +130,7 @@ class DirectoryWatcher
 		watcher = null;
 	}
 
-	synchronized void dispose()
+	public synchronized void dispose()
 	{
 		if (watcher != null)
 		{
