@@ -9,9 +9,9 @@ package com.aptana.ui.properties;
 
 import org.eclipse.osgi.util.NLS;
 
-public class Messages extends NLS
+public class EplMessages extends NLS
 {
-	private static final String BUNDLE_NAME = "com.aptana.ui.properties.messages"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = "com.aptana.ui.properties.eplmessages"; //$NON-NLS-1$
 
 	public static String ProjectNaturesPage_CloseProjectJob_Title;
 	public static String ProjectNaturesPage_Description;
@@ -28,10 +28,10 @@ public class Messages extends NLS
 	static
 	{
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
+		NLS.initializeMessages(BUNDLE_NAME, EplMessages.class);
 	}
 
-	private Messages()
+	private EplMessages()
 	{
 	}
 }

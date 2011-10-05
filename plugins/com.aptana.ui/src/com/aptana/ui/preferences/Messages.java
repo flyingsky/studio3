@@ -1,8 +1,8 @@
 /**
  * Aptana Studio
  * Copyright (c) 2005-2011 by Appcelerator, Inc. All Rights Reserved.
- * Licensed under the terms of the Eclipse Public License (EPL).
- * Please see the license-epl.html included with this distribution for details.
+ * Licensed under the terms of the GNU Public License (GPL) v3 (with exceptions).
+ * Please see the license.html included with this distribution for details.
  * Any modifications to this file must keep this entire header intact.
  */
 package com.aptana.ui.preferences;
@@ -11,7 +11,15 @@ import org.eclipse.osgi.util.NLS;
 
 public class Messages extends NLS
 {
+
 	private static final String BUNDLE_NAME = "com.aptana.ui.preferences.messages"; //$NON-NLS-1$
+
+	public static String AptanaPreferencePage_Auto_Migrate_Projects;
+	public static String AptanaPreferencePage_Auto_Refresh_Projects;
+
+	public static String ProjectBuildPathPropertyPage_TableDescription;
+	public static String ProjectBuildPathPropertyPage_LibraryColumnLabel;
+	public static String ProjectBuildPathPropertyPage_PathColumnLabel;
 
 	public static String TroubleshootingPreferencePage_DebugSpecificComponents;
 	public static String TroubleshootingPreferencePage_LBL_DebuggingOutputLevel;
@@ -24,18 +32,6 @@ public class Messages extends NLS
 	public static String TroubleshootingPreferencePage_LBL_NoDebuggingOutput;
 	public static String TroubleshootingPreferencePage_ShowHiddenProcesses;
 	public static String TroubleshootingPreferencePage_TroubleshootingPageHeader;
-
-	public static String GenericRootPage_genericPerferencesPageMessage;
-	public static String GenericRootPage_noAvailablePages;
-	public static String GenericRootPage_preferences;
-
-	public static String PropertyAndPreferencePage_configureProjectSettings;
-	public static String PropertyAndPreferencePage_configureWorkspaceSettings;
-	public static String PropertyAndPreferencePage_enableProjectSpecific;
-
-	public static String ProjectBuildPathPropertyPage_TableDescription;
-	public static String ProjectBuildPathPropertyPage_LibraryColumnLabel;
-	public static String ProjectBuildPathPropertyPage_PathColumnLabel;
 
 	static
 	{

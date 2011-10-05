@@ -14,11 +14,11 @@ import org.eclipse.osgi.util.NLS;
  * 
  * @author Robin
  */
-public final class Messages extends NLS
+public final class EplMessages extends NLS
 {
-	private static final String BUNDLE_NAME = "com.aptana.ui.wizards.messages";//$NON-NLS-1$
+	private static final String BUNDLE_NAME = "com.aptana.ui.wizards.eplmessages";//$NON-NLS-1$
 
-	private Messages()
+	private EplMessages()
 	{
 		// Do not instantiate
 	}
@@ -37,6 +37,6 @@ public final class Messages extends NLS
 
 	static
 	{
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
+		NLS.initializeMessages(BUNDLE_NAME, EplMessages.class);
 	}
 }
