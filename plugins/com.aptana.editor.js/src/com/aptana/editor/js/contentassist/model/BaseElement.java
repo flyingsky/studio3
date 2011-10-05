@@ -24,6 +24,8 @@ import com.aptana.core.util.SourcePrinter;
 import com.aptana.core.util.StringUtil;
 import com.aptana.index.core.IndexDocument;
 import com.aptana.index.core.IndexUtil;
+import com.aptana.parsing.lexer.IRange;
+import com.aptana.parsing.lexer.Range;
 
 public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? extends BaseElement<P>>> implements
 		Convertible, IndexDocument, IPropertySource
@@ -32,12 +34,15 @@ public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? ext
 	private static final String SINCE_PROPERTY = "since"; //$NON-NLS-1$
 	private static final String DESCRIPTION_PROPERTY = "description"; //$NON-NLS-1$
 	private static final String NAME_PROPERTY = "name"; //$NON-NLS-1$
+	private static final String OFFSET_PROPERTY = "offset"; //$NON-NLS-1$
+	private static final String LENGTH_PROPERTY = "length"; //$NON-NLS-1$
 
 	private String _name;
 	private String _description;
 	private List<UserAgentElement> _userAgents;
 	private List<SinceElement> _sinceList;
 	private List<String> _documents;
+	private IRange _range;
 
 	/**
 	 * addDocument
@@ -105,6 +110,14 @@ public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? ext
 
 		this._sinceList = IndexUtil.createList(object.get(SINCE_PROPERTY), SinceElement.class);
 		this._userAgents = IndexUtil.createList(object.get(USER_AGENTS_PROPERTY), UserAgentElement.class);
+
+		if (object.containsKey(OFFSET_PROPERTY) && object.containsKey(LENGTH_PROPERTY))
+		{
+			int offset = ((Integer) object.get(OFFSET_PROPERTY)).intValue();
+			int length = ((Integer) object.get(LENGTH_PROPERTY)).intValue();
+
+			_range = new Range(offset, offset + length);
+		}
 	}
 
 	/**
@@ -190,6 +203,16 @@ public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? ext
 	}
 
 	/**
+	 * Get source region where element is declared
+	 * 
+	 * @return
+	 */
+	public IRange getRange()
+	{
+		return _range;
+	}
+
+	/**
 	 * getSinceList
 	 * 
 	 * @return
@@ -271,6 +294,16 @@ public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? ext
 	{
 	}
 
+	/**
+	 * setRange
+	 * 
+	 * @param range
+	 */
+	public void setRange(IRange range)
+	{
+		_range = range;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.mortbay.util.ajax.JSON.Convertible#toJSON(org.mortbay.util.ajax.JSON.Output)
@@ -281,6 +314,12 @@ public abstract class BaseElement<P extends Enum<P> & IPropertyInformation<? ext
 		out.add(DESCRIPTION_PROPERTY, this.getDescription());
 		out.add(SINCE_PROPERTY, this.getSinceList());
 		out.add(USER_AGENTS_PROPERTY, this.getUserAgents());
+
+		if (_range != null)
+		{
+			out.add(OFFSET_PROPERTY, _range.getStartingOffset());
+			out.add(LENGTH_PROPERTY, _range.getLength());
+		}
 	}
 
 	/**

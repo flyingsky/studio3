@@ -125,7 +125,14 @@ public class JSHyperlink implements IHyperlink
 				{
 					AbstractTextEditor editor = (AbstractTextEditor) part;
 
-					editor.selectAndReveal(targetFileRegion.getOffset(), targetFileRegion.getLength());
+					if (targetFileRegion != null)
+					{
+						editor.selectAndReveal(targetFileRegion.getOffset(), targetFileRegion.getLength());
+					}
+					else
+					{
+						editor.selectAndReveal(0, 0);
+					}
 				}
 			}
 			catch (Exception e)
