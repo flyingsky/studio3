@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.URI;
+import java.util.List;
 
 import org.eclipse.core.filesystem.EFS;
 import org.eclipse.core.filesystem.IFileStore;
@@ -69,9 +70,14 @@ public class JSCAFileIndexingParticipant extends AbstractFileIndexingParticipant
 
 				// create new Window type for this file
 				JSIndexReader jsir = new JSIndexReader();
-				TypeElement window = jsir.getType(index, JSTypeConstants.WINDOW_TYPE, true);
+				List<TypeElement> windows = jsir.getType(index, JSTypeConstants.WINDOW_TYPE, true);
+				TypeElement window;
 
-				if (window == null)
+				if (windows != null && !windows.isEmpty())
+				{
+					window = windows.get(windows.size() - 1);
+				}
+				else
 				{
 					window = new TypeElement();
 					window.setName(JSTypeConstants.WINDOW_TYPE);

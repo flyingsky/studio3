@@ -8,7 +8,9 @@
 package com.aptana.editor.js.contentassist.model;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ClassElement
@@ -56,6 +58,34 @@ public class ClassElement extends TypeElement
 
 	/*
 	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.BaseElement#getDocuments()
+	 */
+	@Override
+	public List<String> getDocuments()
+	{
+		List<String> result = new ArrayList<String>();
+
+		if (classTypes != null)
+		{
+			for (TypeElement type : classTypes)
+			{
+				result.addAll(type.getDocuments());
+			}
+		}
+
+		if (instanceTypes != null)
+		{
+			for (TypeElement type : instanceTypes)
+			{
+				result.addAll(type.getDocuments());
+			}
+		}
+
+		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.aptana.editor.js.contentassist.model.TypeElement#getProperties()
 	 */
 	@Override
@@ -67,10 +97,7 @@ public class ClassElement extends TypeElement
 		{
 			for (TypeElement classType : classTypes)
 			{
-				for (PropertyElement property : classType.getProperties())
-				{
-					result.add(property);
-				}
+				result.addAll(classType.getProperties());
 			}
 		}
 
@@ -78,14 +105,21 @@ public class ClassElement extends TypeElement
 		{
 			for (TypeElement instanceType : instanceTypes)
 			{
-				for (PropertyElement property : instanceType.getProperties())
-				{
-					result.add(property);
-				}
+				result.addAll(instanceType.getProperties());
 			}
 		}
 
 		return result;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.BaseElement#getPropertyInfoSet()
+	 */
+	@Override
+	protected Set<Property> getPropertyInfoSet()
+	{
+		return EnumSet.allOf(Property.class);
 	}
 
 	/**

@@ -58,9 +58,14 @@ public class SDocMLFileIndexingParticipant extends AbstractFileIndexingParticipa
 
 				// create new Window type for this file
 				JSIndexReader jsir = new JSIndexReader();
-				TypeElement window = jsir.getType(index, JSTypeConstants.WINDOW_TYPE, true);
+				List<TypeElement> windows = jsir.getType(index, JSTypeConstants.WINDOW_TYPE, true);
+				TypeElement window;
 
-				if (window == null)
+				if (windows != null && !windows.isEmpty())
+				{
+					window = windows.get(windows.size() - 1);
+				}
+				else
 				{
 					window = new TypeElement();
 					window.setName(JSTypeConstants.WINDOW_TYPE);

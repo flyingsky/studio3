@@ -142,9 +142,9 @@ public class JSIndexReader extends IndexReader
 	 * @return
 	 * @throws IOException
 	 */
-	public FunctionElement getFunction(Index index, String owningType, String propertyName)
+	public List<FunctionElement> getFunctions(Index index, String owningType, String propertyName)
 	{
-		FunctionElement result = null;
+		List<FunctionElement> result = new ArrayList<FunctionElement>();
 
 		if (index != null && !StringUtil.isEmpty(owningType) && !StringUtil.isEmpty(propertyName))
 		{
@@ -156,9 +156,12 @@ public class JSIndexReader extends IndexReader
 			);
 			// @formatter:on
 
-			if (functions != null && functions.size() > 0)
+			if (functions != null)
 			{
-				result = this.createFunction(functions.get(0));
+				for (QueryResult function : functions)
+				{
+					result.add(this.createFunction(function));
+				}
 			}
 		}
 
@@ -350,9 +353,9 @@ public class JSIndexReader extends IndexReader
 	 * @return
 	 * @throws IOException
 	 */
-	public PropertyElement getProperty(Index index, String owningType, String propertyName)
+	public List<PropertyElement> getProperties(Index index, String owningType, String propertyName)
 	{
-		PropertyElement result = null;
+		List<PropertyElement> result = new ArrayList<PropertyElement>();
 
 		if (index != null && !StringUtil.isEmpty(owningType) && !StringUtil.isEmpty(propertyName))
 		{
@@ -364,9 +367,12 @@ public class JSIndexReader extends IndexReader
 			);
 			// @formatter:on
 
-			if (properties != null && properties.size() > 0)
+			if (properties != null)
 			{
-				result = this.createProperty(properties.get(0));
+				for (QueryResult property : properties)
+				{
+					result.add(this.createProperty(property));
+				}
 			}
 		}
 
@@ -391,9 +397,9 @@ public class JSIndexReader extends IndexReader
 	 * @param includeMembers
 	 * @return
 	 */
-	public TypeElement getType(Index index, String typeName, boolean includeMembers)
+	public List<TypeElement> getType(Index index, String typeName, boolean includeMembers)
 	{
-		TypeElement result = null;
+		List<TypeElement> result = new ArrayList<TypeElement>();
 
 		if (index != null && !StringUtil.isEmpty(typeName))
 		{
@@ -407,15 +413,20 @@ public class JSIndexReader extends IndexReader
 			);
 			// @formatter:on
 
-			if (types != null && !types.isEmpty())
+			if (types != null)
 			{
-				result = createType(types.get(0));
-
-				if (includeMembers)
+				for (QueryResult type : types)
 				{
-					this.attachMembers(result, index);
+					TypeElement t = this.createType(type);
 
-					result.setSerializeProperties(true);
+					if (includeMembers)
+					{
+						this.attachMembers(t, index);
+
+						t.setSerializeProperties(true);
+					}
+
+					result.add(t);
 				}
 			}
 		}

@@ -18,8 +18,52 @@ import com.aptana.core.util.SourcePrinter;
 import com.aptana.core.util.StringUtil;
 import com.aptana.index.core.IndexUtil;
 
-public class TypeElement extends BaseElement
+public class TypeElement extends BaseElement<TypeElement.Property>
 {
+	enum Property implements IPropertyInformation<TypeElement>
+	{
+		NAME("Name")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return node.getName();
+			}
+		},
+		DESCRIPTION("Description")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return node.getDescription();
+			}
+		},
+		DOCUMENTS("Documents")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return StringUtil.join(", ", node.getDocuments());
+			}
+		},
+		PROPERTY_COUNT("Property Count")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return node.getProperties().size();
+			}
+		};
+
+		private String header;
+
+		private Property(String header) // $codepro.audit.disable unusedMethod
+		{
+			this.header = header;
+		}
+
+		public String getHeader()
+		{
+			return header;
+		}
+	}
+
 	private static final String FUNCTIONS_PROPERTY = "functions"; //$NON-NLS-1$
 	private static final String PROPERTIES_PROPERTY = "properties"; //$NON-NLS-1$
 	private static final String EVENTS_PROPERTY = "events"; //$NON-NLS-1$

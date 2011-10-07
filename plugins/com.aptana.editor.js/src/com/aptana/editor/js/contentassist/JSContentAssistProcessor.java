@@ -659,11 +659,20 @@ public class JSContentAssistProcessor extends CommonContentAssistProcessor
 
 			if (typeName != null && methodName != null)
 			{
-				PropertyElement property = this._indexHelper.getTypeMember(this.getIndex(), typeName, methodName);
+				List<PropertyElement> properties = this._indexHelper.getTypeMembers(this.getIndex(), typeName,
+						methodName);
 
-				if (property instanceof FunctionElement)
+				if (properties != null)
 				{
-					result = (FunctionElement) property;
+					// TODO: Should we do anything special if there is more than one function?
+					for (PropertyElement property : properties)
+					{
+						if (property instanceof FunctionElement)
+						{
+							result = (FunctionElement) property;
+							break;
+						}
+					}
 				}
 			}
 		}

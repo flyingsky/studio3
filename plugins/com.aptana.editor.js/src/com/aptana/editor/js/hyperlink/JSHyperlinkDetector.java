@@ -8,6 +8,7 @@
 package com.aptana.editor.js.hyperlink;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdaptable;
@@ -57,7 +58,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	public IHyperlink[] detectHyperlinks(AbstractThemeableEditor editor, IRegion region,
 			boolean canShowMultipleHyperlinks)
 	{
-		IHyperlink result = null;
+		IHyperlink[] result = null;
 
 		if (editor != null && region != null)
 		{
@@ -77,7 +78,12 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			}
 		}
 
-		return (result == null) ? null : new IHyperlink[] { result };
+		if (!canShowMultipleHyperlinks && result != null & result.length > 1)
+		{
+			result = new IHyperlink[] { result[0] };
+		}
+
+		return result;
 	}
 
 	/**
@@ -86,14 +92,15 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	 * @param offset
 	 * @return
 	 */
-	private IHyperlink processAST(AbstractThemeableEditor editor, JSParseRootNode ast, int offset)
+	private IHyperlink[] processAST(AbstractThemeableEditor editor, JSParseRootNode ast, int offset)
 	{
 		// walk AST to grab potential hyperlinks
 		JSHyperlinkCollector collector = new JSHyperlinkCollector(offset);
 		ast.accept(collector);
-		IHyperlink result = collector.getHyperlink();
+		IHyperlink link = collector.getHyperlink();
+		List<IHyperlink> result = null;
 
-		if (result != null)
+		if (link != null)
 		{
 			IParseNode node = ast.getNodeAtOffset(offset);
 
@@ -101,7 +108,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			((JSParseRootNode) ast).accept(identifier);
 			LocationType type = identifier.getType();
 
-			BaseElement<?> element = null;
+			List<? extends BaseElement<?>> elements = null;
 
 			switch (type)
 			{
@@ -121,7 +128,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 								"Hyperlink property types: " + StringUtil.join(", ", types), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$ //$NON-NLS-2$
 						JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
 
-						element = queryHelper.getType(index, typeName, true);
+						elements = queryHelper.getTypes(index, typeName, true);
 					}
 					break;
 				}
@@ -132,7 +139,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 					Index index = EditorUtil.getIndex(editor);
 					JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
 
-					element = queryHelper.getGlobal(index, name);
+					elements = queryHelper.getGlobal(index, name);
 					break;
 				}
 
@@ -140,25 +147,35 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 					break;
 			}
 
-			if (element != null)
+			if (elements != null && !elements.isEmpty())
 			{
-				IdeLog.logInfo(JSPlugin.getDefault(),
-						"Hyperlink type model element: " + element.toSource(), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
+				result = new ArrayList<IHyperlink>();
 
-				List<String> documents = element.getDocuments();
-
-				if (documents != null && !documents.isEmpty())
+				for (BaseElement<?> element : elements)
 				{
-					IdeLog.logInfo(
-							JSPlugin.getDefault(),
-							"Hyperlink type model documents: " + StringUtil.join(", ", documents), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
+					IdeLog.logInfo(JSPlugin.getDefault(),
+							"Hyperlink type model element: " + element.toSource(), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
 
-					((JSHyperlink) result).setFilePath(documents.get(0));
+					List<String> documents = element.getDocuments();
+
+					if (documents != null && !documents.isEmpty())
+					{
+						IdeLog.logInfo(
+								JSPlugin.getDefault(),
+								"Hyperlink type model documents: " + StringUtil.join(", ", documents), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
+
+						// TODO: create separate links for each document?
+						((JSHyperlink) link).setFilePath(documents.get(0));
+
+						result.add(link);
+
+						break;
+					}
 				}
 			}
 		}
 
-		return result;
+		return (result == null) ? null : result.toArray(new IHyperlink[result.size()]);
 	}
 
 	/**

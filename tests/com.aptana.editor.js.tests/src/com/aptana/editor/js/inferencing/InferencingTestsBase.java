@@ -12,6 +12,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -258,7 +259,7 @@ public abstract class InferencingTestsBase extends TestCase
 	 * @param typeName
 	 * @return
 	 */
-	protected TypeElement getType(String typeName)
+	protected List<TypeElement> getType(String typeName)
 	{
 		return this._reader.getType(this.getIndex(), typeName, true);
 	}
@@ -384,14 +385,21 @@ public abstract class InferencingTestsBase extends TestCase
 	/**
 	 * structureTests
 	 * 
-	 * @param type
+	 * @param types
 	 * @param propertyNames
 	 */
-	protected void structureTests(TypeElement type, String... propertyNames)
+	protected void structureTests(List<TypeElement> types, String... propertyNames)
 	{
-		List<String> parentTypes = type.getParentTypes();
+		List<String> parentTypes = new ArrayList<String>();
+
+		for (TypeElement type : types)
+		{
+			parentTypes.addAll(type.getParentTypes());
+		}
 		assertEquals(1, parentTypes.size());
 		assertEquals(JSTypeConstants.OBJECT_TYPE, parentTypes.get(0));
+
+		TypeElement type = types.get(0);
 
 		for (String propertyName : propertyNames)
 		{

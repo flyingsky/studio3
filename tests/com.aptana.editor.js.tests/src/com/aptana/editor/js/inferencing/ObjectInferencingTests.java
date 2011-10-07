@@ -78,19 +78,19 @@ public class ObjectInferencingTests extends InferencingTestsBase
 		assertEquals(1, types.size());
 		String typeName = types.get(0);
 
-		TypeElement type = this.getType(typeName);
-		assertNotNull(type);
-		this.structureTests(type, "a");
+		List<TypeElement> typeElements = this.getType(typeName);
+		assertNotNull(typeElements);
+		this.structureTests(typeElements, "a");
 
-		PropertyElement property = type.getProperty("b");
+		PropertyElement property = typeElements.get(0).getProperty("b");
 		assertNotNull(property);
 		List<String> propertyTypeNames = property.getTypeNames();
 		assertEquals(1, propertyTypeNames.size());
 
 		String propertyTypeName = propertyTypeNames.get(0);
-		TypeElement propertyType = this.getType(propertyTypeName);
-		assertNotNull(propertyType);
+		List<TypeElement> propertyTypes = this.getType(propertyTypeName);
+		assertNotNull(propertyTypes);
 
-		this.structureTests(propertyType, "c");
+		this.structureTests(propertyTypes, "c");
 	}
 }
