@@ -31,7 +31,7 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 
 import com.aptana.core.util.StringUtil;
-import com.aptana.editor.common.contentassist.LexemeProvider;
+import com.aptana.editor.common.contentassist.ILexemeProvider;
 import com.aptana.editor.common.tests.util.AssertUtil;
 import com.aptana.editor.common.tests.util.TestProject;
 import com.aptana.editor.html.BadDocument;
@@ -43,7 +43,7 @@ import com.aptana.editor.html.parsing.lexer.HTMLTokenType;
 import com.aptana.editor.html.preferences.IPreferenceConstants;
 import com.aptana.editor.html.tests.HTMLEditorBasedTests;
 import com.aptana.projects.WebProjectNature;
-import com.aptana.webserver.core.EFSWebServerConfiguration;
+import com.aptana.webserver.core.SimpleWebServer;
 import com.aptana.webserver.core.WebServerCorePlugin;
 
 public class HTMLContentAssistProcessorTest extends HTMLEditorBasedTests
@@ -237,6 +237,12 @@ public class HTMLContentAssistProcessorTest extends HTMLEditorBasedTests
 	public void testExistingEntityGetsFullyReplaced2()
 	{
 		assertCompletionCorrect("<div>&a|acute;</div>", '\t', ENTITY_PROPOSAL_COUNT, "&amp;", "<div>&amp;</div>", null); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
+	public void testEntityDoesntReplaceNonEntityText()
+	{
+		assertCompletionCorrect(
+				"<div>ind&u|stria</div>", '\t', ENTITY_PROPOSAL_COUNT, "&uacute;", "<div>ind&uacute;stria</div>", null); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
 	public void testProposalsBadLocation()
@@ -483,7 +489,7 @@ public class HTMLContentAssistProcessorTest extends HTMLEditorBasedTests
 		final IFile file = project.createFile("test.html", "<link rel='stylesheet' href='/|' />");
 		this.setupTestContext(file);
 
-		EFSWebServerConfiguration server = new EFSWebServerConfiguration();
+		SimpleWebServer server = new SimpleWebServer();
 		server.setDocumentRoot(project.getURI());
 		server.setBaseURL(new URL("http://www.test.com/"));
 		WebServerCorePlugin.getDefault().getServerManager().add(server);
@@ -752,6 +758,30 @@ public class HTMLContentAssistProcessorTest extends HTMLEditorBasedTests
 		project.delete();
 	}
 
+	public void testAttributeNameAtSpace()
+	{
+		String document = "<p | align=\"\"></p>";
+		int offset = HTMLTestUtil.findCursorOffset(document);
+		fDocument = HTMLTestUtil.createDocument(document, true);
+		ITextViewer viewer = createTextViewer(fDocument);
+
+		ICompletionProposal[] proposals = fProcessor.doComputeCompletionProposals(viewer, offset, '\t', false);
+		assertTrue(proposals.length > 0);
+		AssertUtil.assertProposalFound("class", proposals);
+	}
+
+	public void testAttributeNameAtSpace2()
+	{
+		String document = "<p align=\"\" | ></p>";
+		int offset = HTMLTestUtil.findCursorOffset(document);
+		fDocument = HTMLTestUtil.createDocument(document, true);
+		ITextViewer viewer = createTextViewer(fDocument);
+
+		ICompletionProposal[] proposals = fProcessor.doComputeCompletionProposals(viewer, offset, '\t', false);
+		assertTrue(proposals.length > 0);
+		AssertUtil.assertProposalFound("class", proposals);
+	}
+
 	public void testAttributeAfterElementName()
 	{
 		String document = "<body s|></body>";
@@ -889,7 +919,7 @@ public class HTMLContentAssistProcessorTest extends HTMLEditorBasedTests
 		int offset = HTMLTestUtil.findCursorOffset(document);
 		fDocument = HTMLTestUtil.createDocument(document, true);
 
-		LexemeProvider<HTMLTokenType> lexemeProvider = HTMLTestUtil.createLexemeProvider(fDocument, offset);
+		ILexemeProvider<HTMLTokenType> lexemeProvider = HTMLTestUtil.createLexemeProvider(fDocument, offset);
 		LocationType l = fProcessor.getOpenTagLocationType(lexemeProvider, offset);
 
 		assertEquals(location, l);

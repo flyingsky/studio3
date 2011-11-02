@@ -38,14 +38,13 @@ import org.eclipse.swt.graphics.Image;
 import org.eclipse.ui.ISharedImages;
 import org.eclipse.ui.PlatformUI;
 
-import com.aptana.core.IURIMapper;
 import com.aptana.core.logging.IdeLog;
 import com.aptana.core.util.StringUtil;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.CommonContentAssistProcessor;
 import com.aptana.editor.common.contentassist.CommonCompletionProposal;
 import com.aptana.editor.common.contentassist.ICommonCompletionProposal;
-import com.aptana.editor.common.contentassist.LexemeProvider;
+import com.aptana.editor.common.contentassist.ILexemeProvider;
 import com.aptana.editor.common.contentassist.UserAgentManager;
 import com.aptana.editor.css.CSSSourceConfiguration;
 import com.aptana.editor.css.contentassist.CSSContentAssistProcessor;
@@ -53,6 +52,7 @@ import com.aptana.editor.html.HTMLPlugin;
 import com.aptana.editor.html.HTMLSourceConfiguration;
 import com.aptana.editor.html.HTMLTagScanner;
 import com.aptana.editor.html.HTMLTagUtil;
+import com.aptana.editor.html.IDebugScopes;
 import com.aptana.editor.html.IHTMLEditorDebugScopes;
 import com.aptana.editor.html.contentassist.index.IHTMLIndexConstants;
 import com.aptana.editor.html.contentassist.model.AttributeElement;
@@ -62,6 +62,7 @@ import com.aptana.editor.html.contentassist.model.EventElement;
 import com.aptana.editor.html.contentassist.model.ValueElement;
 import com.aptana.editor.html.parsing.HTMLParseState;
 import com.aptana.editor.html.parsing.HTMLUtils;
+import com.aptana.editor.html.parsing.lexer.HTMLLexemeProvider;
 import com.aptana.editor.html.parsing.lexer.HTMLTokenType;
 import com.aptana.editor.html.preferences.IPreferenceConstants;
 import com.aptana.editor.js.JSSourceConfiguration;
@@ -72,7 +73,7 @@ import com.aptana.parsing.lexer.Lexeme;
 import com.aptana.parsing.lexer.Range;
 import com.aptana.preview.ProjectPreviewUtil;
 import com.aptana.ui.util.UIUtils;
-import com.aptana.webserver.core.EFSWebServerConfiguration;
+import com.aptana.webserver.core.IServer;
 import com.aptana.webserver.core.WebServerCorePlugin;
 
 public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
@@ -252,7 +253,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param lexemeProvider
 	 * @param offset
 	 */
-	protected List<ICompletionProposal> addAttributeAndEventProposals(LexemeProvider<HTMLTokenType> lexemeProvider,
+	protected List<ICompletionProposal> addAttributeAndEventProposals(ILexemeProvider<HTMLTokenType> lexemeProvider,
 			int offset)
 	{
 		List<ICompletionProposal> proposals = new ArrayList<ICompletionProposal>();
@@ -299,6 +300,15 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 			List<String> userAgents = element.getUserAgentNames();
 			Image[] userAgentIcons = UserAgentManager.getInstance().getUserAgentImages(userAgents);
 
+			if (IdeLog.isInfoEnabled(HTMLPlugin.getDefault(), IDebugScopes.CONTENT_ASSIST))
+			{
+				IdeLog.logInfo(
+						HTMLPlugin.getDefault(),
+						MessageFormat
+								.format("Current element: {0}, Current lexeme: {1}, Replace offset: {2}. Replace length: {3}", elementName, _currentLexeme, offset, replaceLength), //$NON-NLS-1$
+						IDebugScopes.CONTENT_ASSIST);
+			}
+
 			for (AttributeElement attribute : this._queryHelper.getAttributes(element))
 			{
 				String name = attribute.getName();
@@ -334,6 +344,12 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 						replaceLength, positions);
 				proposals.add(p);
 			}
+		}
+		else
+		{
+			IdeLog.logInfo(HTMLPlugin.getDefault(),
+					MessageFormat.format("Current element: {0}, Current lexeme: {1}", elementName, _currentLexeme),
+					IDebugScopes.CONTENT_ASSIST);
 		}
 
 		return proposals;
@@ -373,7 +389,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param lexemeProvider
 	 * @param offset
 	 */
-	private List<ICompletionProposal> addAttributeValueProposals(LexemeProvider<HTMLTokenType> lexemeProvider,
+	private List<ICompletionProposal> addAttributeValueProposals(ILexemeProvider<HTMLTokenType> lexemeProvider,
 			int offset)
 	{
 		List<ICompletionProposal> proposals = new ArrayList<ICompletionProposal>();
@@ -504,10 +520,10 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 					baseStore = EFS.getStore(projectUri);
 
 					// Get the project webroot
-					IURIMapper serverConfiguration = ProjectPreviewUtil.getServerConfiguration(getProject());
+					IServer serverConfiguration = ProjectPreviewUtil.getServerConfiguration(getProject());
 					if (serverConfiguration == null)
 					{
-						for (IURIMapper server : WebServerCorePlugin.getDefault().getServerManager()
+						for (IServer server : WebServerCorePlugin.getDefault().getServerManager()
 								.getServers())
 						{
 							if (server.resolve(editorStore) != null)
@@ -517,9 +533,9 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 							}
 						}
 					}
-					if (serverConfiguration != null && serverConfiguration instanceof EFSWebServerConfiguration)
+					if (serverConfiguration != null)
 					{
-						URI documentRoot = ((EFSWebServerConfiguration) serverConfiguration).getDocumentRoot();
+						URI documentRoot = serverConfiguration.getDocumentRoot();
 						if (documentRoot != null)
 						{
 							baseStore = EFS.getStore(documentRoot);
@@ -604,16 +620,9 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 			if (lastSlash != -1)
 			{
 				IFileStore possibleChild = baseStore.getChild(valuePrefix.substring(0, lastSlash));
-				try
+				if (possibleChild.fetchInfo().exists())
 				{
-					if (possibleChild.fetchInfo().exists())
-					{
-						baseStore = possibleChild;
-					}
-				}
-				catch (Exception e)
-				{
-					// ignore
+					baseStore = possibleChild;
 				}
 				offset += lastSlash + 1;
 				valuePrefix = valuePrefix.substring(lastSlash + 1);
@@ -731,7 +740,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param lexemeProvider
 	 * @param offset
 	 */
-	protected List<ICompletionProposal> addElementProposals(LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	protected List<ICompletionProposal> addElementProposals(ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		List<ICompletionProposal> proposals = new ArrayList<ICompletionProposal>();
 		List<ElementElement> elements = this._queryHelper.getElements();
@@ -893,7 +902,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param result
 	 * @param offset
 	 */
-	private void addEntityProposals(List<ICompletionProposal> proposals, LexemeProvider<HTMLTokenType> lexemeProvider,
+	private void addEntityProposals(List<ICompletionProposal> proposals, ILexemeProvider<HTMLTokenType> lexemeProvider,
 			int offset)
 	{
 		this.setEntityRange(offset);
@@ -940,8 +949,8 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param result
 	 * @param offset
 	 */
-	private void addDoctypeProposals(List<ICompletionProposal> proposals, LexemeProvider<HTMLTokenType> lexemeProvider,
-			int offset)
+	private void addDoctypeProposals(List<ICompletionProposal> proposals,
+			ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		this._replaceRange = null;
 		// Replace all the way until we hit the end of the doctype tag!
@@ -1012,7 +1021,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param result
 	 */
 	private void addOpenTagProposals(LocationType fineLocation, List<ICompletionProposal> proposals,
-			LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+			ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		switch (fineLocation)
 		{
@@ -1041,7 +1050,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param result
 	 */
 	private boolean addUnclosedTagProposals(LocationType fineLocation, List<ICompletionProposal> proposals,
-			LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+			ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		boolean addedProposal = false;
 		// First see if there are any unclosed tags, suggest them first
@@ -1072,7 +1081,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param result
 	 */
 	private boolean addDefaultCloseTagProposals(LocationType fineLocation, List<ICompletionProposal> proposals,
-			LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+			ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		HTMLParseState state = null;
 		boolean addedProposal = false;
@@ -1100,7 +1109,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	}
 
 	private CommonCompletionProposal createCloseTagProposal(ElementElement element,
-			LexemeProvider<HTMLTokenType> lexemeProvider, int offset, int relevance)
+			ILexemeProvider<HTMLTokenType> lexemeProvider, int offset, int relevance)
 	{
 		List<String> userAgents = element.getUserAgentNames();
 		Image[] userAgentIcons = UserAgentManager.getInstance().getUserAgentImages(userAgents);
@@ -1248,11 +1257,20 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 		// tokenize the current document
 		this._document = viewer.getDocument();
 
-		LexemeProvider<HTMLTokenType> lexemeProvider = this.createLexemeProvider(_document, (offset > 0) ? offset - 1
+		ILexemeProvider<HTMLTokenType> lexemeProvider = this.createLexemeProvider(_document, (offset > 0) ? offset - 1
 				: offset);
 
 		// store a reference to the lexeme at the current position
-		this._replaceRange = this._currentLexeme = lexemeProvider.getFloorLexeme(offset);
+		Lexeme<HTMLTokenType> tempLexeme = lexemeProvider.getLexemeFromOffset(offset);
+		if (tempLexeme != null)
+		{
+			this._replaceRange = this._currentLexeme = tempLexeme;
+		}
+		else
+		{
+			this._replaceRange = null;
+			this._currentLexeme = lexemeProvider.getFloorLexeme(offset);
+		}
 
 		// first step is to determine if we're inside an open tag, close tag, text, etc.
 		LocationType location = this.getCoarseLocationType(_document, lexemeProvider, offset);
@@ -1330,6 +1348,12 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 		}
 
 		ICompletionProposal[] proposals = result.toArray(new ICompletionProposal[result.size()]);
+
+		if (IdeLog.isInfoEnabled(HTMLPlugin.getDefault(), IDebugScopes.CONTENT_ASSIST))
+		{
+			IdeLog.logInfo(HTMLPlugin.getDefault(), MessageFormat.format("Generated {0} proposals", proposals.length), //$NON-NLS-1$
+					IDebugScopes.CONTENT_ASSIST);
+		}
 
 		// select the current proposal based on the current lexeme
 		if (this._replaceRange != null)
@@ -1419,21 +1443,14 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	LexemeProvider<HTMLTokenType> createLexemeProvider(IDocument document, int offset)
+	ILexemeProvider<HTMLTokenType> createLexemeProvider(IDocument document, int offset)
 	{
 		int documentLength = document.getLength();
 
 		// account for last position returning an empty IDocument default partition
 		int lexemeProviderOffset = (offset >= documentLength) ? documentLength - 1 : offset;
 
-		return new LexemeProvider<HTMLTokenType>(document, lexemeProviderOffset, new HTMLTagScanner())
-		{
-			@Override
-			protected HTMLTokenType getTypeFromData(Object data)
-			{
-				return HTMLTokenType.get((String) data);
-			}
-		};
+		return new HTMLLexemeProvider(document, lexemeProviderOffset, new HTMLTagScanner());
 	}
 
 	/**
@@ -1443,7 +1460,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	private String getAttributeName(LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	private String getAttributeName(ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		String name = null;
 		int index = lexemeProvider.getLexemeFloorIndex(offset);
@@ -1495,7 +1512,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	private String getElementName(LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	private String getElementName(ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		String result = null;
 		int index = lexemeProvider.getLexemeFloorIndex(offset);
@@ -1527,7 +1544,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	private IRange getAttributeValueRange(LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	private IRange getAttributeValueRange(ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		int startingOffset = -1;
 		int endingOffset = -1;
@@ -1591,7 +1608,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	LocationType getCoarseLocationType(IDocument document, LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	LocationType getCoarseLocationType(IDocument document, ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		LocationType result = LocationType.ERROR;
 
@@ -1658,6 +1675,12 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 					IHTMLEditorDebugScopes.CONTENT_ASSIST);
 		}
 
+		if (IdeLog.isInfoEnabled(HTMLPlugin.getDefault(), IDebugScopes.CONTENT_ASSIST))
+		{
+			IdeLog.logInfo(HTMLPlugin.getDefault(), MessageFormat.format("Coarse location: {0}", result), //$NON-NLS-1$
+					IDebugScopes.CONTENT_ASSIST);
+		}
+
 		return result;
 	}
 
@@ -1670,7 +1693,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 * @param offset
 	 * @return
 	 */
-	LocationType getOpenTagLocationType(LexemeProvider<HTMLTokenType> lexemeProvider, int offset)
+	LocationType getOpenTagLocationType(ILexemeProvider<HTMLTokenType> lexemeProvider, int offset)
 	{
 		LocationType result = LocationType.ERROR;
 
@@ -1766,8 +1789,19 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 				case DOUBLE_QUOTED_STRING:
 					if (lexeme.getEndingOffset() < offset && lexeme.getLength() > 1)
 					{
-						result = LocationType.IN_ATTRIBUTE_NAME;
-						this._replaceRange = null;
+						String text = lexeme.getText();
+						char lastChar = (StringUtil.isEmpty(text)) ? '\0' : text.charAt(text.length() - 1);
+
+						if (lastChar == '"' || lastChar == '\'')
+						{
+							result = LocationType.IN_ATTRIBUTE_NAME;
+							this._replaceRange = null;
+						}
+						else
+						{
+							// unclosed attribute value, occurs at EOF
+							result = LocationType.IN_ATTRIBUTE_VALUE;
+						}
 					}
 					else
 					{
@@ -1787,6 +1821,12 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 			{
 				index--;
 			}
+		}
+
+		if (IdeLog.isInfoEnabled(HTMLPlugin.getDefault(), IDebugScopes.CONTENT_ASSIST))
+		{
+			IdeLog.logInfo(HTMLPlugin.getDefault(),
+					MessageFormat.format("Fine location: {0}", result), IDebugScopes.CONTENT_ASSIST); //$NON-NLS-1$
 		}
 
 		return result;
@@ -1831,7 +1871,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 				}
 				if (Character.isWhitespace(c) || c == '<')
 				{
-					end = i - 1;
+					end = offset - 1;
 					break;
 				}
 			}
@@ -1851,7 +1891,7 @@ public class HTMLContentAssistProcessor extends CommonContentAssistProcessor
 	 */
 	public boolean isValidAutoActivationLocation(char c, int keyCode, IDocument document, int offset)
 	{
-		LexemeProvider<HTMLTokenType> lexemeProvider = this.createLexemeProvider(document, offset);
+		ILexemeProvider<HTMLTokenType> lexemeProvider = this.createLexemeProvider(document, offset);
 
 		// first step is to determine if we're inside an open tag, close tag, text, etc.
 		LocationType location = this.getCoarseLocationType(document, lexemeProvider, offset);
