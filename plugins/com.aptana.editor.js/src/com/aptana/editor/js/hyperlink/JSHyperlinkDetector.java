@@ -24,10 +24,10 @@ import com.aptana.editor.common.parsing.FileService;
 import com.aptana.editor.common.util.EditorUtil;
 import com.aptana.editor.js.IDebugScopes;
 import com.aptana.editor.js.JSPlugin;
-import com.aptana.editor.js.contentassist.ASTUtil;
 import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
 import com.aptana.editor.js.contentassist.JSLocationIdentifier;
 import com.aptana.editor.js.contentassist.LocationType;
+import com.aptana.editor.js.contentassist.ParseUtil;
 import com.aptana.editor.js.contentassist.model.BaseElement;
 import com.aptana.editor.js.parsing.ast.JSGetPropertyNode;
 import com.aptana.editor.js.parsing.ast.JSParseRootNode;
@@ -114,11 +114,11 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			{
 				case IN_PROPERTY_NAME:
 				{
-					JSGetPropertyNode getPropertyNode = ASTUtil.getGetPropertyNode(identifier.getTargetNode(),
+					JSGetPropertyNode getPropertyNode = ParseUtil.getGetPropertyNode(identifier.getTargetNode(),
 							identifier.getStatementNode());
 					Index index = EditorUtil.getIndex(editor);
 					URI location = EditorUtil.getURI(editor);
-					List<String> types = ASTUtil.getParentObjectTypes(index, location, node, getPropertyNode, offset);
+					List<String> types = ParseUtil.getParentObjectTypes(index, location, node, getPropertyNode, offset);
 
 					if (types != null && !types.isEmpty())
 					{
