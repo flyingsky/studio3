@@ -13,6 +13,7 @@ import java.net.URI;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.jface.text.IFindReplaceTarget;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.ui.IEditorPart;
@@ -32,6 +33,7 @@ public class JSHyperlink implements IHyperlink
 
 	private String targetFilePath;
 	private IRegion targetFileRegion;
+	private String searchString;
 
 	/**
 	 * JSHyperlink
@@ -131,7 +133,16 @@ public class JSHyperlink implements IHyperlink
 					}
 					else
 					{
-						editor.selectAndReveal(0, 0);
+						IFindReplaceTarget target = (IFindReplaceTarget) part.getAdapter(IFindReplaceTarget.class);
+
+						if (target != null && target.canPerformFind())
+						{
+							target.findAndSelect(0, searchString, true, true, true);
+						}
+						else
+						{
+							editor.selectAndReveal(0, 0);
+						}
 					}
 				}
 			}
@@ -151,6 +162,16 @@ public class JSHyperlink implements IHyperlink
 	public void setFilePath(String path)
 	{
 		targetFilePath = path;
+	}
+
+	/**
+	 * setSearchString
+	 * 
+	 * @param string
+	 */
+	public void setSearchString(String string)
+	{
+		searchString = string;
 	}
 
 	/**
