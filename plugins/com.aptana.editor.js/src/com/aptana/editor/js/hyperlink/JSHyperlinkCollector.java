@@ -10,6 +10,7 @@ package com.aptana.editor.js.hyperlink;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
@@ -21,6 +22,7 @@ import com.aptana.editor.js.IDebugScopes;
 import com.aptana.editor.js.JSPlugin;
 import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
 import com.aptana.editor.js.contentassist.JSLocationIdentifier;
+import com.aptana.editor.js.contentassist.JSModelFormatter;
 import com.aptana.editor.js.contentassist.LocationType;
 import com.aptana.editor.js.contentassist.ParseUtil;
 import com.aptana.editor.js.contentassist.model.BaseElement;
@@ -178,12 +180,19 @@ public class JSHyperlinkCollector extends JSTreeWalker
 					);
 					// @formatter:on
 
-					JSHyperlink jsLink = new JSHyperlink(new Region(start, length), linkType, linkText + ": "
-							+ documentList);
-					jsLink.setFilePath(documents.get(0));
-					jsLink.setSearchString(element.getName());
+					String elementName = element.getName();
 
-					addHyperlink(jsLink);
+					for (String document : documents)
+					{
+						IRegion region = new Region(start, length);
+						String text = JSModelFormatter.getDocumentDisplayName(document);
+						JSHyperlink jsLink = new JSHyperlink(region, linkType, text);
+
+						jsLink.setFilePath(document);
+						jsLink.setSearchString(elementName);
+
+						addHyperlink(jsLink);
+					}
 				}
 			}
 		}
