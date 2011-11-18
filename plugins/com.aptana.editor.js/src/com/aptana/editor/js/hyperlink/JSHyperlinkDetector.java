@@ -7,31 +7,18 @@
  */
 package com.aptana.editor.js.hyperlink;
 
-import java.net.URI;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
+import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
-import com.aptana.core.logging.IdeLog;
-import com.aptana.core.util.StringUtil;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.parsing.FileService;
-import com.aptana.editor.common.util.EditorUtil;
-import com.aptana.editor.js.IDebugScopes;
-import com.aptana.editor.js.JSPlugin;
-import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
-import com.aptana.editor.js.contentassist.JSLocationIdentifier;
-import com.aptana.editor.js.contentassist.LocationType;
-import com.aptana.editor.js.contentassist.ParseUtil;
-import com.aptana.editor.js.contentassist.model.BaseElement;
-import com.aptana.editor.js.parsing.ast.JSGetPropertyNode;
 import com.aptana.editor.js.parsing.ast.JSParseRootNode;
-import com.aptana.index.core.Index;
 import com.aptana.parsing.ast.IParseNode;
 
 public class JSHyperlinkDetector extends AbstractHyperlinkDetector
@@ -78,7 +65,7 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 			}
 		}
 
-		if (!canShowMultipleHyperlinks && result != null & result.length > 1)
+		if (!canShowMultipleHyperlinks && result != null && result.length > 0)
 		{
 			result = new IHyperlink[] { result[0] };
 		}
@@ -95,87 +82,17 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	private IHyperlink[] processAST(AbstractThemeableEditor editor, JSParseRootNode ast, int offset)
 	{
 		// walk AST to grab potential hyperlinks
-		JSHyperlinkCollector collector = new JSHyperlinkCollector(offset);
+		JSHyperlinkCollector collector = new JSHyperlinkCollector(editor, ast, offset);
 		ast.accept(collector);
-		IHyperlink link = collector.getHyperlink();
-		List<IHyperlink> result = null;
+		List<IHyperlink> result = collector.getHyperlinks();
 
-		if (link != null)
+		// TEMP: for debugging
+		if (result != null && result.size() > 1)
 		{
-			IParseNode node = ast.getNodeAtOffset(offset);
-
-			JSLocationIdentifier identifier = new JSLocationIdentifier(offset, node);
-			((JSParseRootNode) ast).accept(identifier);
-			LocationType type = identifier.getType();
-
-			List<? extends BaseElement<?>> elements = null;
-
-			switch (type)
-			{
-				case IN_PROPERTY_NAME:
-				{
-					JSGetPropertyNode getPropertyNode = ParseUtil.getGetPropertyNode(identifier.getTargetNode(),
-							identifier.getStatementNode());
-					Index index = EditorUtil.getIndex(editor);
-					URI location = EditorUtil.getURI(editor);
-					List<String> types = ParseUtil.getParentObjectTypes(index, location, node, getPropertyNode, offset);
-
-					if (types != null && !types.isEmpty())
-					{
-						String typeName = types.get(0);
-						IdeLog.logInfo(
-								JSPlugin.getDefault(),
-								"Hyperlink property types: " + StringUtil.join(", ", types), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$ //$NON-NLS-2$
-						JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-
-						elements = queryHelper.getTypes(index, typeName, true);
-					}
-					break;
-				}
-
-				case IN_VARIABLE_NAME:
-				{
-					String name = node.getText();
-					Index index = EditorUtil.getIndex(editor);
-					JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-
-					elements = queryHelper.getGlobal(index, name);
-					break;
-				}
-
-				default:
-					break;
-			}
-
-			if (elements != null && !elements.isEmpty())
-			{
-				result = new ArrayList<IHyperlink>();
-
-				for (BaseElement<?> element : elements)
-				{
-					IdeLog.logInfo(JSPlugin.getDefault(),
-							"Hyperlink type model element: " + element.toSource(), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
-
-					List<String> documents = element.getDocuments();
-
-					if (documents != null && !documents.isEmpty())
-					{
-						IdeLog.logInfo(
-								JSPlugin.getDefault(),
-								"Hyperlink type model documents: " + StringUtil.join(", ", documents), IDebugScopes.OPEN_DECLARATION_TYPES); //$NON-NLS-1$
-
-						// TODO: create separate links for each document?
-						((JSHyperlink) link).setFilePath(documents.get(0));
-
-						result.add(link);
-
-						break;
-					}
-				}
-			}
+			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
 		}
 
-		return (result == null) ? null : result.toArray(new IHyperlink[result.size()]);
+		return (result == null || result.isEmpty()) ? null : result.toArray(new IHyperlink[result.size()]);
 	}
 
 	/**
