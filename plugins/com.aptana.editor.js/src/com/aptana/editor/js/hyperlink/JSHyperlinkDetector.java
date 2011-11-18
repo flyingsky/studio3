@@ -90,6 +90,8 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 		if (result != null && result.size() > 1)
 		{
 			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
+			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
+			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
 		}
 
 		return (result == null || result.isEmpty()) ? null : result.toArray(new IHyperlink[result.size()]);
