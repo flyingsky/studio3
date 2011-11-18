@@ -49,7 +49,7 @@ public class OpenDeclarationAction extends TextEditorAction
 			ITextSelection selection = (ITextSelection) textEditor.getSelectionProvider().getSelection();
 			IRegion region = new Region(selection.getOffset(), 1);
 			JSHyperlinkDetector detector = new JSHyperlinkDetector();
-			IHyperlink[] hyperlinks = detector.detectHyperlinks((AbstractThemeableEditor) textEditor, region, false);
+			IHyperlink[] hyperlinks = detector.detectHyperlinks((AbstractThemeableEditor) textEditor, region, true);
 
 			if (hyperlinks != null && hyperlinks.length > 0)
 			{
