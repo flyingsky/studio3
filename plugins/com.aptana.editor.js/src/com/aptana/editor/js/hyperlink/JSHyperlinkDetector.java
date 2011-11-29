@@ -12,7 +12,6 @@ import java.util.List;
 import org.eclipse.core.runtime.IAdaptable;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
-import org.eclipse.jface.text.Region;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 
@@ -85,14 +84,6 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 		JSHyperlinkCollector collector = new JSHyperlinkCollector(editor, ast, offset);
 		ast.accept(collector);
 		List<IHyperlink> result = collector.getHyperlinks();
-
-		// TEMP: for debugging
-		if (result != null && result.size() > 1)
-		{
-			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
-			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
-			result.add(new JSHyperlink(new Region(0, 0), "empty", "empty"));
-		}
 
 		return (result == null || result.isEmpty()) ? null : result.toArray(new IHyperlink[result.size()]);
 	}
