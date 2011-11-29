@@ -183,17 +183,17 @@ public class JSIndexQueryHelper
 	protected List<PropertyElement> getMembers(Index index, String typeName, String memberName)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> properties = this.getProperties(index, typeName, memberName);
 		List<FunctionElement> functions = this.getFunction(index, typeName, memberName);
-
-		if (properties != null)
-		{
-			result.addAll(properties);
-		}
+		List<PropertyElement> properties = this.getProperties(index, typeName, memberName);
 
 		if (functions != null)
 		{
 			result.addAll(functions);
+		}
+
+		if (properties != null)
+		{
+			result.addAll(properties);
 		}
 
 		return result;
@@ -210,17 +210,17 @@ public class JSIndexQueryHelper
 	protected List<PropertyElement> getMembers(Index index, List<String> typeNames)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> properties = this.getProperties(index, typeNames);
 		List<FunctionElement> functions = this.getFunctions(index, typeNames);
-
-		if (properties != null)
-		{
-			result.addAll(properties);
-		}
+		List<PropertyElement> properties = this.getProperties(index, typeNames);
 
 		if (functions != null)
 		{
 			result.addAll(functions);
+		}
+
+		if (properties != null)
+		{
+			result.addAll(properties);
 		}
 
 		return result;
@@ -237,17 +237,17 @@ public class JSIndexQueryHelper
 	protected List<PropertyElement> getMembers(Index index, String typeName)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> properties = this.getProperties(index, typeName);
 		List<FunctionElement> functions = this.getFunctions(index, typeName);
-
-		if (properties != null)
-		{
-			result.addAll(properties);
-		}
+		List<PropertyElement> properties = this.getProperties(index, typeName);
 
 		if (functions != null)
 		{
 			result.addAll(functions);
+		}
+
+		if (properties != null)
+		{
+			result.addAll(properties);
 		}
 
 		return result;
@@ -417,17 +417,17 @@ public class JSIndexQueryHelper
 	public List<PropertyElement> getTypeMembers(Index index, List<String> typeNames)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> globalMembers = this.getMembers(getIndex(), typeNames);
 		List<PropertyElement> projectMembers = this.getMembers(index, typeNames);
-
-		if (globalMembers != null)
-		{
-			result.addAll(globalMembers);
-		}
+		List<PropertyElement> globalMembers = this.getMembers(getIndex(), typeNames);
 
 		if (projectMembers != null)
 		{
 			result.addAll(projectMembers);
+		}
+
+		if (globalMembers != null)
+		{
+			result.addAll(globalMembers);
 		}
 
 		return result;
@@ -444,17 +444,17 @@ public class JSIndexQueryHelper
 	public List<PropertyElement> getTypeMembers(Index index, String typeName)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> globalMembers = this.getMembers(getIndex(), typeName);
 		List<PropertyElement> projectMembers = this.getMembers(index, typeName);
-
-		if (globalMembers != null)
-		{
-			result.addAll(globalMembers);
-		}
+		List<PropertyElement> globalMembers = this.getMembers(getIndex(), typeName);
 
 		if (projectMembers != null)
 		{
 			result.addAll(projectMembers);
+		}
+
+		if (globalMembers != null)
+		{
+			result.addAll(globalMembers);
 		}
 
 		return result;
@@ -470,17 +470,17 @@ public class JSIndexQueryHelper
 	public List<PropertyElement> getTypeProperties(Index index, String typeName)
 	{
 		List<PropertyElement> result = new ArrayList<PropertyElement>();
-		List<PropertyElement> globalProperties = this.getProperties(getIndex(), typeName);
 		List<PropertyElement> projectProperties = this.getProperties(index, typeName);
-
-		if (globalProperties != null)
-		{
-			result.addAll(globalProperties);
-		}
+		List<PropertyElement> globalProperties = this.getProperties(getIndex(), typeName);
 
 		if (projectProperties != null)
 		{
 			result.addAll(projectProperties);
+		}
+
+		if (globalProperties != null)
+		{
+			result.addAll(globalProperties);
 		}
 
 		return result;
