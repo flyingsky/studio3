@@ -240,4 +240,47 @@ public class EditorUtil
 		}
 		return null;
 	}
+
+	/**
+	 * getProject
+	 * 
+	 * @param editor
+	 * @return
+	 */
+	public static IProject getProject(AbstractThemeableEditor editor)
+	{
+		IProject result = null;
+
+		if (editor != null)
+		{
+			IEditorInput editorInput = editor.getEditorInput();
+
+			if (editorInput instanceof IFileEditorInput)
+			{
+				IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
+				IFile file = fileEditorInput.getFile();
+				result = file.getProject();
+			}
+		}
+
+		return result;
+	}
+
+	/**
+	 * getProjectURI
+	 * 
+	 * @return
+	 */
+	public static URI getProjectURI(AbstractThemeableEditor editor)
+	{
+		IProject project = getProject(editor);
+		URI result = null;
+
+		if (project != null)
+		{
+			result = project.getLocationURI();
+		}
+
+		return result;
+	}
 }

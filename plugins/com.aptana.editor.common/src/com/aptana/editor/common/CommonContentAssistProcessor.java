@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IProject;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.PerformanceStats;
@@ -43,8 +42,6 @@ import org.eclipse.jface.text.contentassist.IContextInformationValidator;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.graphics.Image;
-import org.eclipse.ui.IEditorInput;
-import org.eclipse.ui.IFileEditorInput;
 import org.jruby.Ruby;
 import org.jruby.RubyArray;
 import org.jruby.RubyHash;
@@ -656,23 +653,14 @@ public class CommonContentAssistProcessor implements IContentAssistProcessor, IC
 		return null;
 	}
 
+	/**
+	 * getProject
+	 * 
+	 * @return
+	 */
 	protected IProject getProject()
 	{
-		IProject result = null;
-
-		if (editor != null)
-		{
-			IEditorInput editorInput = editor.getEditorInput();
-
-			if (editorInput instanceof IFileEditorInput)
-			{
-				IFileEditorInput fileEditorInput = (IFileEditorInput) editorInput;
-				IFile file = fileEditorInput.getFile();
-				result = file.getProject();
-			}
-		}
-
-		return result;
+		return EditorUtil.getProject(editor);
 	}
 
 	/**
@@ -682,15 +670,7 @@ public class CommonContentAssistProcessor implements IContentAssistProcessor, IC
 	 */
 	protected URI getProjectURI()
 	{
-		URI result = null;
-
-		IProject project = getProject();
-		if (project != null)
-		{
-			result = project.getLocationURI();
-		}
-
-		return result;
+		return EditorUtil.getProjectURI(editor);
 	}
 
 	/*
