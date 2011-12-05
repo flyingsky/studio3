@@ -7,6 +7,7 @@
  */
 package com.aptana.editor.js.hyperlink;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,18 +17,18 @@ import org.eclipse.jface.text.hyperlink.IHyperlink;
 
 import com.aptana.core.logging.IdeLog;
 import com.aptana.core.util.StringUtil;
+import com.aptana.core.util.URIUtil;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.util.EditorUtil;
 import com.aptana.editor.js.IDebugScopes;
 import com.aptana.editor.js.JSPlugin;
 import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
 import com.aptana.editor.js.contentassist.JSLocationIdentifier;
-import com.aptana.editor.js.contentassist.JSModelFormatter;
 import com.aptana.editor.js.contentassist.LocationType;
 import com.aptana.editor.js.contentassist.ParseUtil;
-import com.aptana.editor.js.contentassist.model.BaseElement;
-import com.aptana.editor.js.contentassist.model.TypeElement;
+import com.aptana.editor.js.contentassist.model.PropertyElement;
 import com.aptana.editor.js.parsing.ast.IJSNodeTypes;
+import com.aptana.editor.js.parsing.ast.JSGetPropertyNode;
 import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
 import com.aptana.editor.js.parsing.ast.JSNode;
 import com.aptana.editor.js.parsing.ast.JSParseRootNode;
@@ -84,108 +85,124 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	 * @param start
 	 * @param length
 	 */
-	protected void processLink(String linkText, int start, int length)
+	protected void processLink(JSIdentifierNode node)
 	{
-		String linkType = "<unknown>";
-
-		// grab node at the offset
-		IParseNode node = ast.getNodeAtOffset(offset);
-
 		// determine location type at the offset
 		JSLocationIdentifier identifier = new JSLocationIdentifier(offset, node);
 		((JSParseRootNode) ast).accept(identifier);
 		LocationType type = identifier.getType();
 
-		// container for elements to possible process later
-		List<? extends BaseElement<?>> elements = null;
-
 		switch (type)
 		{
 			case IN_PROPERTY_NAME:
 			{
-				linkType = "property";
-
-				Index index = EditorUtil.getIndex(editor);
-
-				// @formatter:off
-				List<String> types = ParseUtil.getParentObjectTypes(
-					index,
-					EditorUtil.getURI(editor),
-					node,
-					ParseUtil.getGetPropertyNode(identifier.getTargetNode(), identifier.getStatementNode()),
-					offset
-				);
-				// @formatter:on
-
-				if (types != null && !types.isEmpty())
-				{
-					// @formatter:off
-					IdeLog.logInfo(
-						JSPlugin.getDefault(),
-						"Hyperlink property types: " + StringUtil.join(", ", types), //$NON-NLS-1$ //$NON-NLS-2$
-						IDebugScopes.OPEN_DECLARATION_TYPES
-					);
-					// @formatter:on
-
-					JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-					// NOTE: I can't instantiate and add to elements directly, so we have to do this temporary list
-					// dance with a later assignment to make the compiler happy
-					List<TypeElement> typeList = new ArrayList<TypeElement>();
-
-					for (String typeName : types)
-					{
-						typeList.addAll(queryHelper.getTypes(index, typeName, true));
-					}
-
-					elements = typeList;
-				}
+				JSGetPropertyNode propertyNode = ParseUtil.getGetPropertyNode(identifier.getTargetNode(),
+						identifier.getStatementNode());
+				processProperty(node, propertyNode);
 				break;
 			}
 
 			case IN_VARIABLE_NAME:
 			{
-				linkType = "variable";
-
-				elements = new JSIndexQueryHelper().getGlobal(EditorUtil.getIndex(editor), node.getText());
+				processVariable(node);
 				break;
 			}
 
 			default:
 				break;
 		}
+	}
 
-		if (elements != null && !elements.isEmpty())
+	/**
+	 * @param node
+	 * @param identifier
+	 */
+	protected void processProperty(JSIdentifierNode node, JSGetPropertyNode propertyNode)
+	{
+		List<PropertyElement> elements = new ArrayList<PropertyElement>();
+		Index index = EditorUtil.getIndex(editor);
+		List<String> types = ParseUtil.getParentObjectTypes(index, EditorUtil.getURI(editor), node, propertyNode,
+				offset);
+
+		if (types != null && !types.isEmpty())
 		{
-			for (BaseElement<?> element : elements)
+			JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
+
+			for (String typeName : types)
 			{
+				elements.addAll(queryHelper.getTypeMembers(index, typeName, node.getText()));
+			}
+		}
+
+		processPropertyElements(elements, "property", node);
+	}
+
+	/**
+	 * processVariable
+	 * 
+	 * @param start
+	 * @param length
+	 * @param node
+	 */
+	protected void processVariable(JSIdentifierNode node)
+	{
+		List<PropertyElement> elements = new JSIndexQueryHelper()
+				.getGlobal(EditorUtil.getIndex(editor), node.getText());
+
+		processPropertyElements(elements, "variable", node);
+	}
+
+	/**
+	 * processPropertyElements
+	 * 
+	 * @param elements
+	 * @param linkType
+	 * @param node
+	 */
+	protected void processPropertyElements(List<PropertyElement> elements, String linkType, JSIdentifierNode node)
+	{
+		URI projectURI = EditorUtil.getProjectURI(editor);
+
+		int start = node.getStart();
+		int length = node.getLength();
+
+		if (node.getSemicolonIncluded())
+		{
+			--length;
+		}
+
+		for (PropertyElement element : elements)
+		{
+			// @formatter:off
+			IdeLog.logInfo(
+				JSPlugin.getDefault(),
+				"Hyperlink type model element: " + element.toSource(), //$NON-NLS-1$
+				IDebugScopes.OPEN_DECLARATION_TYPES
+			);
+			// @formatter:on
+
+			List<String> documents = element.getDocuments();
+
+			if (documents != null && !documents.isEmpty())
+			{
+				String documentList = StringUtil.join(", ", documents);
+
 				// @formatter:off
 				IdeLog.logInfo(
 					JSPlugin.getDefault(),
-					"Hyperlink type model element: " + element.toSource(), //$NON-NLS-1$
+					"Hyperlink type model documents: " + documentList, //$NON-NLS-1$ //$NON-NLS-2$
 					IDebugScopes.OPEN_DECLARATION_TYPES
 				);
 				// @formatter:on
 
-				List<String> documents = element.getDocuments();
+				String elementName = element.getName();
 
-				if (documents != null && !documents.isEmpty())
+				for (String document : documents)
 				{
-					String documentList = StringUtil.join(", ", documents);
-
-					// @formatter:off
-					IdeLog.logInfo(
-						JSPlugin.getDefault(),
-						"Hyperlink type model documents: " + documentList, //$NON-NLS-1$ //$NON-NLS-2$
-						IDebugScopes.OPEN_DECLARATION_TYPES
-					);
-					// @formatter:on
-
-					String elementName = element.getName();
-
-					for (String document : documents)
+					if (isInCurrentProject(projectURI, document))
 					{
 						IRegion region = new Region(start, length);
-						String text = JSModelFormatter.getDocumentDisplayName(document);
+						String text = getDocumentDisplayName(projectURI, document);
 						JSHyperlink jsLink = new JSHyperlink(region, linkType, text);
 
 						jsLink.setFilePath(document);
@@ -196,6 +213,60 @@ public class JSHyperlinkCollector extends JSTreeWalker
 				}
 			}
 		}
+	}
+
+	/**
+	 * Determine if the specified document is within the specified project
+	 * 
+	 * @param projectURI
+	 * @param document
+	 * @return
+	 */
+	protected boolean isInCurrentProject(URI projectURI, String document)
+	{
+		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
+		boolean result = false;
+
+		String path = URIUtil.decodeURI(document);
+
+		if (prefix != null && path.startsWith(prefix))
+		{
+			result = true;
+		}
+
+		return result;
+	}
+
+	/**
+	 * Format the document to a relative path within the project, including the project name in the result
+	 * 
+	 * @param projectURI
+	 * @param document
+	 * @return
+	 */
+	protected String getDocumentDisplayName(URI projectURI, String document)
+	{
+		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
+
+		// back up one segment so we include the project name in the document
+		if (prefix != null && prefix.length() > 2)
+		{
+			int index = prefix.lastIndexOf('/', prefix.length() - 2);
+
+			if (index != -1 && index > 0)
+			{
+				prefix = prefix.substring(0, index - 1);
+			}
+		}
+
+		String result = URIUtil.decodeURI(document);
+
+		if (prefix != null && result.startsWith(prefix))
+		{
+			result = result.substring(prefix.length() + 1);
+		}
+
+		return result;
 	}
 
 	/*
@@ -230,15 +301,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 
 			if (valid)
 			{
-				int start = node.getStart();
-				int length = node.getLength();
-
-				if (node.getSemicolonIncluded())
-				{
-					--length;
-				}
-
-				processLink(node.getText(), start, length);
+				processLink(node);
 			}
 		}
 	}
