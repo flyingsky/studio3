@@ -121,8 +121,8 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	{
 		List<PropertyElement> elements = new ArrayList<PropertyElement>();
 		Index index = EditorUtil.getIndex(editor);
-		List<String> types = ParseUtil.getParentObjectTypes(index, EditorUtil.getURI(editor), node, propertyNode,
-				offset);
+		URI editorURI = EditorUtil.getURI(editor);
+		List<String> types = ParseUtil.getParentObjectTypes(index, editorURI, node, propertyNode, offset);
 
 		if (types != null && !types.isEmpty())
 		{
@@ -134,7 +134,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 			}
 		}
 
-		processPropertyElements(elements, "property", node);
+		processPropertyElements(elements, node);
 	}
 
 	/**
@@ -146,20 +146,19 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	 */
 	protected void processVariable(JSIdentifierNode node)
 	{
-		List<PropertyElement> elements = new JSIndexQueryHelper()
-				.getGlobal(EditorUtil.getIndex(editor), node.getText());
+		JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
+		List<PropertyElement> elements = queryHelper.getGlobal(EditorUtil.getIndex(editor), node.getText());
 
-		processPropertyElements(elements, "variable", node);
+		processPropertyElements(elements, node);
 	}
 
 	/**
 	 * processPropertyElements
 	 * 
 	 * @param elements
-	 * @param linkType
 	 * @param node
 	 */
-	protected void processPropertyElements(List<PropertyElement> elements, String linkType, JSIdentifierNode node)
+	protected void processPropertyElements(List<PropertyElement> elements, JSIdentifierNode node)
 	{
 		URI projectURI = EditorUtil.getProjectURI(editor);
 
@@ -170,6 +169,8 @@ public class JSHyperlinkCollector extends JSTreeWalker
 		{
 			--length;
 		}
+
+		String linkType = getLinkType(node);
 
 		for (PropertyElement element : elements)
 		{
@@ -199,20 +200,47 @@ public class JSHyperlinkCollector extends JSTreeWalker
 
 				for (String document : documents)
 				{
-					if (isInCurrentProject(projectURI, document))
+					// NOTE: projectURI is null during unit testing
+					if (projectURI == null || isInCurrentProject(projectURI, document))
 					{
 						IRegion region = new Region(start, length);
 						String text = getDocumentDisplayName(projectURI, document);
-						JSHyperlink jsLink = new JSHyperlink(region, linkType, text);
 
-						jsLink.setFilePath(document);
-						jsLink.setSearchString(elementName);
-
-						addHyperlink(jsLink);
+						addHyperlink(new JSHyperlink(region, linkType, text, document, elementName));
 					}
 				}
 			}
 		}
+	}
+
+	/**
+	 * getLinkType
+	 * 
+	 * @param node
+	 * @return
+	 */
+	protected String getLinkType(JSIdentifierNode node)
+	{
+		String result;
+		IParseNode parent = node.getParent();
+
+		if (parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
+		{
+			if (parent.getFirstChild().getNodeType() == IJSNodeTypes.INVOKE)
+			{
+				result = "invocation";
+			}
+			else
+			{
+				result = "";
+			}
+		}
+		else
+		{
+			result = "variable";
+		}
+
+		return result;
 	}
 
 	/**
@@ -289,6 +317,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 			{
 				switch (parent.getNodeType())
 				{
+					case IJSNodeTypes.ARGUMENTS:
 					case IJSNodeTypes.CONSTRUCT:
 					case IJSNodeTypes.GET_PROPERTY:
 					case IJSNodeTypes.INVOKE:
