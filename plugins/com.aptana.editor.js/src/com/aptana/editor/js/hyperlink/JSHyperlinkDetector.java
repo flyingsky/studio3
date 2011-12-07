@@ -10,6 +10,7 @@ package com.aptana.editor.js.hyperlink;
 import java.util.List;
 
 import org.eclipse.core.runtime.IAdaptable;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.ITextViewer;
 import org.eclipse.jface.text.hyperlink.AbstractHyperlinkDetector;
@@ -53,6 +54,9 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 
 			if (fileService != null)
 			{
+				// make sure the source has been parsed
+				fileService.parse(new NullProgressMonitor());
+
 				// grab AST
 				IParseNode ast = fileService.getParseResult();
 
