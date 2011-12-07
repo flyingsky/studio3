@@ -9,44 +9,54 @@ package com.aptana.editor.js.hyperlink;
 
 import java.io.File;
 import java.net.URI;
+import java.util.List;
 
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
 import org.eclipse.core.resources.ResourcesPlugin;
+import org.eclipse.core.runtime.NullProgressMonitor;
 import org.eclipse.jface.text.IFindReplaceTarget;
 import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.texteditor.AbstractTextEditor;
 
 import com.aptana.editor.common.AbstractThemeableEditor;
+import com.aptana.editor.common.parsing.FileService;
 import com.aptana.editor.common.util.EditorUtil;
+import com.aptana.editor.js.parsing.ast.IJSNodeTypes;
+import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
+import com.aptana.editor.js.parsing.ast.JSParseRootNode;
+import com.aptana.parsing.ast.IParseNode;
 
 /**
  * JSHyperlink
  */
 public class JSHyperlink implements IHyperlink
 {
-	private IRegion region;
-	private String type;
-	private String text;
+	private IRegion hyperlinkRegion;
+	private String typeLabel;
+	private String hyperlinkText;
 
 	private String targetFilePath;
-	private IRegion targetFileRegion;
 	private String searchString;
 
 	/**
 	 * JSHyperlink
 	 * 
-	 * @param region
-	 * @param type
-	 * @param text
+	 * @param hyperlinkRegion
+	 * @param typeLabel
+	 * @param hyperlinkText
+	 * @param targetFilePath
+	 * @param searchString
 	 */
-	public JSHyperlink(IRegion region, String type, String text)
+	public JSHyperlink(IRegion hyperlinkRegion, String typeLabel, String hyperlinkText, String targetFilePath,
+			String searchString)
 	{
-		this.region = region;
-		this.type = type;
-		this.text = text;
+		this.hyperlinkRegion = hyperlinkRegion;
+		this.typeLabel = typeLabel;
+		this.hyperlinkText = hyperlinkText;
+		this.targetFilePath = targetFilePath;
+		this.searchString = searchString;
 	}
 
 	/*
@@ -55,25 +65,15 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public IRegion getHyperlinkRegion()
 	{
-		return region;
+		return hyperlinkRegion;
 	}
 
 	/**
-	 * getOffset
+	 * getTargetFilePath
 	 * 
 	 * @return
 	 */
-	public IRegion getTargetFileRegion()
-	{
-		return targetFileRegion;
-	}
-
-	/**
-	 * getPath
-	 * 
-	 * @return
-	 */
-	public String getPath()
+	public String getTargetFilePath()
 	{
 		return targetFilePath;
 	}
@@ -84,7 +84,7 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public String getTypeLabel()
 	{
-		return type;
+		return typeLabel;
 	}
 
 	/*
@@ -93,7 +93,7 @@ public class JSHyperlink implements IHyperlink
 	 */
 	public String getHyperlinkText()
 	{
-		return text;
+		return hyperlinkText;
 	}
 
 	/*
@@ -125,11 +125,47 @@ public class JSHyperlink implements IHyperlink
 
 				if (part instanceof AbstractThemeableEditor)
 				{
-					AbstractTextEditor editor = (AbstractTextEditor) part;
+					AbstractThemeableEditor editor = (AbstractThemeableEditor) part;
 
-					if (targetFileRegion != null)
+					FileService fileService = editor.getFileService();
+
+					// make sure the file has been parsed
+					fileService.parse(new NullProgressMonitor());
+
+					// grab AST
+					IParseNode ast = fileService.getParseResult();
+
+					if (ast instanceof JSParseRootNode)
 					{
-						editor.selectAndReveal(targetFileRegion.getOffset(), targetFileRegion.getLength());
+						JSIdentifierCollector collector = new JSIdentifierCollector(searchString);
+						((JSParseRootNode) ast).accept(collector);
+						List<JSIdentifierNode> identifiers = collector.getIdentifiers();
+						JSIdentifierNode targetIdentifier = null;
+
+						// assume first item in list
+						if (identifiers.size() > 0)
+						{
+							targetIdentifier = identifiers.get(0);
+						}
+
+						// try to refine the selection
+						for (JSIdentifierNode identifier : identifiers)
+						{
+							if ("invocation".equals(typeLabel))
+							{
+								if (identifier.getParent().getNodeType() == IJSNodeTypes.FUNCTION)
+								{
+									targetIdentifier = identifier;
+									break;
+								}
+							}
+						}
+
+						// show what we ended up with
+						if (targetIdentifier != null)
+						{
+							editor.selectAndReveal(targetIdentifier.getStart(), targetIdentifier.getLength());
+						}
 					}
 					else
 					{
@@ -148,39 +184,9 @@ public class JSHyperlink implements IHyperlink
 			}
 			catch (Exception e)
 			{
-				// TODO Auto-generated catch block
+				// TODO: log
 				e.printStackTrace();
 			}
 		}
-	}
-
-	/**
-	 * setFilePath
-	 * 
-	 * @param path
-	 */
-	public void setFilePath(String path)
-	{
-		targetFilePath = path;
-	}
-
-	/**
-	 * setSearchString
-	 * 
-	 * @param string
-	 */
-	public void setSearchString(String string)
-	{
-		searchString = string;
-	}
-
-	/**
-	 * setFileOffset
-	 * 
-	 * @param offset
-	 */
-	public void setTargetFileRegion(IRegion region)
-	{
-		targetFileRegion = region;
 	}
 }
