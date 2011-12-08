@@ -20,6 +20,7 @@ import org.eclipse.jface.text.IRegion;
 import org.eclipse.jface.text.hyperlink.IHyperlink;
 import org.eclipse.ui.IEditorPart;
 
+import com.aptana.core.util.StringUtil;
 import com.aptana.editor.common.AbstractThemeableEditor;
 import com.aptana.editor.common.parsing.FileService;
 import com.aptana.editor.common.util.EditorUtil;
@@ -39,6 +40,7 @@ public class JSHyperlink implements IHyperlink
 
 	private String targetFilePath;
 	private String searchString;
+	private IRegion targetRegion;
 
 	/**
 	 * JSHyperlink
@@ -59,6 +61,52 @@ public class JSHyperlink implements IHyperlink
 		this.searchString = searchString;
 	}
 
+	/**
+	 * JSHyperlink
+	 * 
+	 * @param hyperlinkRegion
+	 * @param typeLabel
+	 * @param hyperlinkText
+	 * @param targetFilePath
+	 * @param searchString
+	 */
+	public JSHyperlink(IRegion hyperlinkRegion, String typeLabel, String hyperlinkText, String targetFilePath,
+			IRegion targetRegion)
+	{
+		this.hyperlinkRegion = hyperlinkRegion;
+		this.typeLabel = typeLabel;
+		this.hyperlinkText = hyperlinkText;
+		this.targetFilePath = targetFilePath;
+		this.targetRegion = targetRegion;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		boolean result = false;
+
+		if (obj instanceof JSHyperlink)
+		{
+			JSHyperlink link = (JSHyperlink) obj;
+
+			result = getHyperlinkRegion().equals(link.getHyperlinkRegion())
+					&& StringUtil.areEqual(getTypeLabel(), link.getTypeLabel())
+					&& StringUtil.areEqual(getHyperlinkText(), link.getHyperlinkText())
+					&& StringUtil.areEqual(getTargetFilePath(), link.getTargetFilePath())
+					&& StringUtil.areEqual(getSearchString(), link.getSearchString());
+		}
+		else
+		{
+			result = super.equals(obj);
+		}
+
+		return result;
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.text.hyperlink.IHyperlink#getHyperlinkRegion()
@@ -69,6 +117,16 @@ public class JSHyperlink implements IHyperlink
 	}
 
 	/**
+	 * getSearchString
+	 * 
+	 * @return
+	 */
+	public String getSearchString()
+	{
+		return searchString;
+	}
+
+	/**
 	 * getTargetFilePath
 	 * 
 	 * @return
@@ -76,6 +134,16 @@ public class JSHyperlink implements IHyperlink
 	public String getTargetFilePath()
 	{
 		return targetFilePath;
+	}
+
+	/**
+	 * getTargetRegion
+	 * 
+	 * @return
+	 */
+	public IRegion getTargetRegion()
+	{
+		return targetRegion;
 	}
 
 	/*
@@ -127,57 +195,64 @@ public class JSHyperlink implements IHyperlink
 				{
 					AbstractThemeableEditor editor = (AbstractThemeableEditor) part;
 
-					FileService fileService = editor.getFileService();
-
-					// make sure the file has been parsed
-					fileService.parse(new NullProgressMonitor());
-
-					// grab AST
-					IParseNode ast = fileService.getParseResult();
-
-					if (ast instanceof JSParseRootNode)
+					if (targetRegion != null)
 					{
-						JSIdentifierCollector collector = new JSIdentifierCollector(searchString);
-						((JSParseRootNode) ast).accept(collector);
-						List<JSIdentifierNode> identifiers = collector.getIdentifiers();
-						JSIdentifierNode targetIdentifier = null;
-
-						// assume first item in list
-						if (identifiers.size() > 0)
-						{
-							targetIdentifier = identifiers.get(0);
-						}
-
-						// try to refine the selection
-						for (JSIdentifierNode identifier : identifiers)
-						{
-							if ("invocation".equals(typeLabel))
-							{
-								if (identifier.getParent().getNodeType() == IJSNodeTypes.FUNCTION)
-								{
-									targetIdentifier = identifier;
-									break;
-								}
-							}
-						}
-
-						// show what we ended up with
-						if (targetIdentifier != null)
-						{
-							editor.selectAndReveal(targetIdentifier.getStart(), targetIdentifier.getLength());
-						}
+						editor.selectAndReveal(targetRegion.getOffset(), targetRegion.getLength());
 					}
 					else
 					{
-						IFindReplaceTarget target = (IFindReplaceTarget) part.getAdapter(IFindReplaceTarget.class);
+						FileService fileService = editor.getFileService();
 
-						if (target != null && target.canPerformFind())
+						// make sure the file has been parsed
+						fileService.parse(new NullProgressMonitor());
+
+						// grab AST
+						IParseNode ast = fileService.getParseResult();
+
+						if (ast instanceof JSParseRootNode)
 						{
-							target.findAndSelect(0, searchString, true, true, true);
+							JSIdentifierCollector collector = new JSIdentifierCollector(searchString);
+							((JSParseRootNode) ast).accept(collector);
+							List<JSIdentifierNode> identifiers = collector.getIdentifiers();
+							JSIdentifierNode targetIdentifier = null;
+
+							// assume first item in list
+							if (identifiers.size() > 0)
+							{
+								targetIdentifier = identifiers.get(0);
+							}
+
+							// try to refine the selection
+							for (JSIdentifierNode identifier : identifiers)
+							{
+								if ("invocation".equals(typeLabel))
+								{
+									if (identifier.getParent().getNodeType() == IJSNodeTypes.FUNCTION)
+									{
+										targetIdentifier = identifier;
+										break;
+									}
+								}
+							}
+
+							// show what we ended up with
+							if (targetIdentifier != null)
+							{
+								editor.selectAndReveal(targetIdentifier.getStart(), targetIdentifier.getLength());
+							}
 						}
 						else
 						{
-							editor.selectAndReveal(0, 0);
+							IFindReplaceTarget target = (IFindReplaceTarget) part.getAdapter(IFindReplaceTarget.class);
+
+							if (target != null && target.canPerformFind())
+							{
+								target.findAndSelect(0, searchString, true, true, true);
+							}
+							else
+							{
+								editor.selectAndReveal(0, 0);
+							}
 						}
 					}
 				}
