@@ -27,6 +27,8 @@ import com.aptana.editor.js.contentassist.JSLocationIdentifier;
 import com.aptana.editor.js.contentassist.LocationType;
 import com.aptana.editor.js.contentassist.ParseUtil;
 import com.aptana.editor.js.contentassist.model.PropertyElement;
+import com.aptana.editor.js.inferencing.JSPropertyCollection;
+import com.aptana.editor.js.inferencing.JSScope;
 import com.aptana.editor.js.parsing.ast.IJSNodeTypes;
 import com.aptana.editor.js.parsing.ast.JSGetPropertyNode;
 import com.aptana.editor.js.parsing.ast.JSIdentifierNode;
@@ -152,6 +154,19 @@ public class JSHyperlinkCollector extends JSTreeWalker
 		processPropertyElements(elements, node);
 	}
 
+	protected IRegion getNodeRegion(JSNode node)
+	{
+		int start = node.getStart();
+		int length = node.getLength();
+
+		if (node.getSemicolonIncluded())
+		{
+			--length;
+		}
+
+		return new Region(start, length);
+	}
+
 	/**
 	 * processPropertyElements
 	 * 
@@ -161,15 +176,7 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	protected void processPropertyElements(List<PropertyElement> elements, JSIdentifierNode node)
 	{
 		URI projectURI = EditorUtil.getProjectURI(editor);
-
-		int start = node.getStart();
-		int length = node.getLength();
-
-		if (node.getSemicolonIncluded())
-		{
-			--length;
-		}
-
+		IRegion region = getNodeRegion(node);
 		String linkType = getLinkType(node);
 
 		for (PropertyElement element : elements)
@@ -203,7 +210,6 @@ public class JSHyperlinkCollector extends JSTreeWalker
 					// NOTE: projectURI is null during unit testing
 					if (projectURI == null || isInCurrentProject(projectURI, document))
 					{
-						IRegion region = new Region(start, length);
 						String text = getDocumentDisplayName(projectURI, document);
 
 						addHyperlink(new JSHyperlink(region, linkType, text, document, elementName));
@@ -306,6 +312,75 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	{
 		if (node.contains(offset))
 		{
+			JSScope globalScope = ast.getGlobals();
+			JSScope activeScope = globalScope.getScopeAtOffset(offset);
+			JSPropertyCollection properties = activeScope.getSymbol(node.getText());
+
+			if (properties != null)
+			{
+				for (JSNode value : properties.getValues())
+				{
+					IParseNode parent = value.getParent();
+
+					switch (parent.getNodeType())
+					{
+						case IJSNodeTypes.PARAMETERS:
+						{
+							IRegion hyperlinkRegion = getNodeRegion(node);
+							String linkType = "parameter";
+							URI projectURI = EditorUtil.getProjectURI(editor);
+							String editorURI = EditorUtil.getURI(editor).toString();
+							String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
+							IRegion targetRegion = getNodeRegion(value);
+
+							addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
+									targetRegion));
+							break;
+						}
+
+						case IJSNodeTypes.DECLARATION:
+						{
+							JSNode targetIdentifier = (JSNode) value.getParent().getFirstChild();
+
+							// NOTE: don't jump to self
+							if (targetIdentifier != node)
+							{
+								IRegion hyperlinkRegion = getNodeRegion(node);
+								String linkType = "local";
+								URI projectURI = EditorUtil.getProjectURI(editor);
+								String editorURI = EditorUtil.getURI(editor).toString();
+								String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
+								IRegion targetRegion = getNodeRegion(targetIdentifier);
+
+								addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
+										targetRegion));
+							}
+							break;
+						}
+
+						default:
+							if (value.getNodeType() == IJSNodeTypes.ASSIGN)
+							{
+								JSNode targetIdentifier = (JSNode) value.getFirstChild();
+
+								// NOTE: don't jump to self
+								if (targetIdentifier != node)
+								{
+									IRegion hyperlinkRegion = getNodeRegion(node);
+									String linkType = "local";
+									URI projectURI = EditorUtil.getProjectURI(editor);
+									String editorURI = EditorUtil.getURI(editor).toString();
+									String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
+									IRegion targetRegion = getNodeRegion(targetIdentifier);
+
+									addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
+											targetRegion));
+								}
+							}
+					}
+				}
+			}
+
 			IParseNode parent = node.getParent();
 			boolean valid = false;
 
@@ -319,11 +394,24 @@ public class JSHyperlinkCollector extends JSTreeWalker
 				{
 					case IJSNodeTypes.ARGUMENTS:
 					case IJSNodeTypes.CONSTRUCT:
-					case IJSNodeTypes.GET_PROPERTY:
 					case IJSNodeTypes.INVOKE:
 					case IJSNodeTypes.RETURN:
 					case IJSNodeTypes.STATEMENTS:
 						valid = true;
+						break;
+
+					case IJSNodeTypes.GET_PROPERTY:
+						// walk up tree until we find the first node that is not part of a series of get-properties
+						while (parent != null && parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
+						{
+							parent = parent.getParent();
+						}
+
+						// don't create links on properties that are on LHS of assignments
+						if (parent == null || parent.getNodeType() != IJSNodeTypes.ASSIGN)
+						{
+							valid = true;
+						}
 						break;
 				}
 			}
