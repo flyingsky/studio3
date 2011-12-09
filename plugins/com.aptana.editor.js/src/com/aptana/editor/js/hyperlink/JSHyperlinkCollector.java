@@ -39,17 +39,43 @@ import com.aptana.index.core.Index;
 import com.aptana.parsing.ast.IParseNode;
 
 /**
- * JSHyperlinkCollector
+ * This class walks a JS AST, potentially creating hyperlinks if the specified offset is within an identifier and if the
+ * identifier meets certain conditions. This class recognizes local variable declarations, local and global (within the
+ * same editor) assignments, and function parameters, taking function nesting into account. For symbols that are not in
+ * the current file, this class will attempt to locate, via the editor's index, all definitions of the symbol in the
+ * editor's project.
  */
 public class JSHyperlinkCollector extends JSTreeWalker
 {
+	/**
+	 * A reference to the editor where hyperlinks may appear
+	 */
 	private AbstractThemeableEditor editor;
+
+	/**
+	 * The root of the parsed JS file in "editor"
+	 */
 	private JSParseRootNode ast;
+
+	/**
+	 * The offset to use when testing for hyperlinks
+	 */
 	private int offset;
+
+	/**
+	 * A collection of hyperlinks recognized by this instance
+	 */
 	private List<IHyperlink> hyperlinks = new ArrayList<IHyperlink>();
 
 	/**
 	 * JSHyperlinkCollector
+	 * 
+	 * @param editor
+	 *            The editor where hyperlinks may occur
+	 * @param ast
+	 *            The JS AST from the editor
+	 * @param offset
+	 *            The offset within the editor where hyperlinks may be created
 	 */
 	public JSHyperlinkCollector(AbstractThemeableEditor editor, JSParseRootNode ast, int offset)
 	{
@@ -59,9 +85,10 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	}
 
 	/**
-	 * addHyperlink
+	 * Add the specified hyperlink to the collection of links recognized by this instance
 	 * 
 	 * @param link
+	 *            The link to add to the hyperlink collection. Null values are ignored
 	 */
 	protected void addHyperlink(IHyperlink link)
 	{
@@ -72,9 +99,70 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	}
 
 	/**
-	 * getHyperlink
+	 * Create a hyperlink based on the source and target nodes. It is assumed that both nodes come from the current
+	 * editor associated with this instance
 	 * 
-	 * @return
+	 * @param linkNode
+	 *            The node where to show a hyperlink
+	 * @param targetNode
+	 *            The node where to jump when the hyperlink is selected
+	 * @param linkType
+	 *            The link type categorization
+	 */
+	protected void addHyperlink(JSIdentifierNode linkNode, JSNode targetNode, String linkType)
+	{
+		// do not jump to self
+		if (linkNode != targetNode)
+		{
+			IRegion hyperlinkRegion = getNodeRegion(linkNode);
+			URI projectURI = EditorUtil.getProjectURI(editor);
+			String targetFilePath = EditorUtil.getURI(editor).toString();
+			String hyperlinkText = getDocumentDisplayName(projectURI, targetFilePath);
+			IRegion targetRegion = getNodeRegion(targetNode);
+
+			addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, targetFilePath, targetRegion));
+		}
+	}
+
+	/**
+	 * Format the document to a relative path within the project, including the project name in the result. If the
+	 * document is not within the project path, then it is returned unchanged
+	 * 
+	 * @param projectURI
+	 *            The URI to the project containing the file in the editor associated with this instance
+	 * @param document
+	 *            A string representation of the document name to trim.
+	 * @return Returns a trimmed or untouched version of the document parameter
+	 */
+	protected String getDocumentDisplayName(URI projectURI, String document)
+	{
+		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
+
+		// back up one segment so we include the project name in the document
+		if (prefix != null && prefix.length() > 2)
+		{
+			int index = prefix.lastIndexOf('/', prefix.length() - 2);
+
+			if (index != -1 && index > 0)
+			{
+				prefix = prefix.substring(0, index - 1);
+			}
+		}
+
+		String result = URIUtil.decodeURI(document);
+
+		if (prefix != null && result.startsWith(prefix))
+		{
+			result = result.substring(prefix.length() + 1);
+		}
+
+		return result;
+	}
+
+	/**
+	 * Return a list of links collected by this instance
+	 * 
+	 * @return Returns a potentially empty list. This value is never null.
 	 */
 	public List<IHyperlink> getHyperlinks()
 	{
@@ -82,42 +170,206 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	}
 
 	/**
-	 * processLink
+	 * Determine the syntactic role of the specified identifier
 	 * 
-	 * @param start
-	 * @param length
+	 * @param node
+	 *            A JS identifier node
+	 * @return Returns a string value classifier. This value may be the empty string but it is never null.
 	 */
-	protected void processLink(JSIdentifierNode node)
+	protected String getLinkType(JSIdentifierNode node)
 	{
-		// determine location type at the offset
-		JSLocationIdentifier identifier = new JSLocationIdentifier(offset, node);
-		((JSParseRootNode) ast).accept(identifier);
-		LocationType type = identifier.getType();
+		String result;
+		IParseNode parent = node.getParent();
 
-		switch (type)
+		if (parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
 		{
-			case IN_PROPERTY_NAME:
+			if (parent.getFirstChild().getNodeType() == IJSNodeTypes.INVOKE)
 			{
-				JSGetPropertyNode propertyNode = ParseUtil.getGetPropertyNode(identifier.getTargetNode(),
-						identifier.getStatementNode());
-				processProperty(node, propertyNode);
-				break;
+				result = "invocation";
 			}
-
-			case IN_VARIABLE_NAME:
+			else
 			{
-				processVariable(node);
-				break;
+				result = "";
 			}
+		}
+		else
+		{
+			result = "variable";
+		}
 
-			default:
-				break;
+		return result;
+	}
+
+	/**
+	 * Convert the specified JS node into an IRegion
+	 * 
+	 * @param node
+	 *            The JS node to convert
+	 * @return Returns an IRegion containing the node and it's trailing semicolon, if it exists
+	 */
+	protected IRegion getNodeRegion(JSNode node)
+	{
+		int start = node.getStart();
+		int length = node.getLength();
+
+		if (node.getSemicolonIncluded())
+		{
+			--length;
+		}
+
+		return new Region(start, length);
+	}
+
+	/**
+	 * Determine if the document is within the specified project
+	 * 
+	 * @param projectURI
+	 * @param document
+	 * @return
+	 */
+	protected boolean isInCurrentProject(URI projectURI, String document)
+	{
+		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
+		boolean result = false;
+
+		String path = URIUtil.decodeURI(document);
+
+		if (prefix != null && path.startsWith(prefix))
+		{
+			result = true;
+		}
+
+		return result;
+	}
+
+	/**
+	 * Process all symbols that are in scope for the offset being processed within the editor. This method creates links
+	 * for symbols that refer to function parameters, local variable declarations, and local assignments, taking
+	 * function nesting into account. Note that all of these link types imply links within the editor only.
+	 * 
+	 * @param node
+	 *            The JS identifier that potentially refers to a parameter or local/global value.
+	 */
+	protected void processEditorSymbols(JSIdentifierNode node)
+	{
+		JSScope globalScope = ast.getGlobals();
+		JSScope activeScope = globalScope.getScopeAtOffset(offset);
+		JSPropertyCollection properties = activeScope.getSymbol(node.getText());
+
+		if (properties != null)
+		{
+			for (JSNode value : properties.getValues())
+			{
+				IParseNode parent = value.getParent();
+
+				switch (parent.getNodeType())
+				{
+					case IJSNodeTypes.PARAMETERS:
+					{
+						addHyperlink(node, value, "parameter");
+						break;
+					}
+
+					case IJSNodeTypes.DECLARATION:
+					{
+						JSNode targetIdentifier = (JSNode) value.getParent().getFirstChild();
+
+						addHyperlink(node, targetIdentifier, "local declaration");
+						break;
+					}
+
+					default:
+						if (value.getNodeType() == IJSNodeTypes.ASSIGN)
+						{
+							JSNode targetIdentifier = (JSNode) value.getFirstChild();
+
+							addHyperlink(node, targetIdentifier, "local assignment");
+						}
+				}
+			}
 		}
 	}
 
 	/**
+	 * Process an identifier as if it links to a symbol outside of the current editor.
+	 * 
 	 * @param node
-	 * @param identifier
+	 *            The JS identifier that potentially refers to a project global symbol definition
+	 */
+	protected void processProjectGlobals(JSIdentifierNode node)
+	{
+		IParseNode parent = node.getParent();
+		boolean valid = false;
+
+		if (parent instanceof JSParseRootNode)
+		{
+			// top-level identifier
+			valid = true;
+		}
+		else if (parent instanceof JSNode)
+		{
+			switch (parent.getNodeType())
+			{
+				case IJSNodeTypes.ARGUMENTS:
+				case IJSNodeTypes.CONSTRUCT:
+				case IJSNodeTypes.INVOKE:
+				case IJSNodeTypes.RETURN:
+				case IJSNodeTypes.STATEMENTS:
+					valid = true;
+					break;
+
+				case IJSNodeTypes.GET_PROPERTY:
+					// walk up tree until we find the first node that is not part of a series of get-properties
+					while (parent != null && parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
+					{
+						parent = parent.getParent();
+					}
+
+					// don't create links on the last property of symbols on the LHS of assignments
+					if (parent == null || parent.getNodeType() != IJSNodeTypes.ASSIGN)
+					{
+						valid = true;
+					}
+					break;
+			}
+		}
+
+		if (valid)
+		{
+			// determine location type at the offset
+			JSLocationIdentifier identifier = new JSLocationIdentifier(offset, node);
+			((JSParseRootNode) ast).accept(identifier);
+			LocationType type = identifier.getType();
+
+			switch (type)
+			{
+				case IN_PROPERTY_NAME:
+				{
+					JSGetPropertyNode propertyNode = ParseUtil.getGetPropertyNode(identifier.getTargetNode(),
+							identifier.getStatementNode());
+					processProperty(node, propertyNode);
+					break;
+				}
+
+				case IN_VARIABLE_NAME:
+				{
+					processVariable(node);
+					break;
+				}
+
+				default:
+					break;
+			}
+		}
+	}
+
+	/**
+	 * Create links to external symbols referred by an identifier that is a property.
+	 * 
+	 * @param node
+	 *            The JS identifier that referencing an external (outside the editor) symbol
+	 * @param propertyNode
+	 *            The top of the property expression
 	 */
 	protected void processProperty(JSIdentifierNode node, JSGetPropertyNode propertyNode)
 	{
@@ -140,38 +392,12 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	}
 
 	/**
-	 * processVariable
-	 * 
-	 * @param start
-	 * @param length
-	 * @param node
-	 */
-	protected void processVariable(JSIdentifierNode node)
-	{
-		JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-		List<PropertyElement> elements = queryHelper.getGlobal(EditorUtil.getIndex(editor), node.getText());
-
-		processPropertyElements(elements, node);
-	}
-
-	protected IRegion getNodeRegion(JSNode node)
-	{
-		int start = node.getStart();
-		int length = node.getLength();
-
-		if (node.getSemicolonIncluded())
-		{
-			--length;
-		}
-
-		return new Region(start, length);
-	}
-
-	/**
-	 * processPropertyElements
+	 * Create links, one for each property element.
 	 * 
 	 * @param elements
+	 *            A non-null list of property elements
 	 * @param node
+	 *            The JS node that refers to each of the property elements
 	 */
 	protected void processPropertyElements(List<PropertyElement> elements, JSIdentifierNode node)
 	{
@@ -220,87 +446,16 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	}
 
 	/**
-	 * getLinkType
+	 * Create links to external types referred by an identifier that is a variable.
 	 * 
 	 * @param node
-	 * @return
 	 */
-	protected String getLinkType(JSIdentifierNode node)
+	protected void processVariable(JSIdentifierNode node)
 	{
-		String result;
-		IParseNode parent = node.getParent();
+		JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
+		List<PropertyElement> elements = queryHelper.getGlobal(EditorUtil.getIndex(editor), node.getText());
 
-		if (parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
-		{
-			if (parent.getFirstChild().getNodeType() == IJSNodeTypes.INVOKE)
-			{
-				result = "invocation";
-			}
-			else
-			{
-				result = "";
-			}
-		}
-		else
-		{
-			result = "variable";
-		}
-
-		return result;
-	}
-
-	/**
-	 * Determine if the specified document is within the specified project
-	 * 
-	 * @param projectURI
-	 * @param document
-	 * @return
-	 */
-	protected boolean isInCurrentProject(URI projectURI, String document)
-	{
-		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
-		boolean result = false;
-
-		String path = URIUtil.decodeURI(document);
-
-		if (prefix != null && path.startsWith(prefix))
-		{
-			result = true;
-		}
-
-		return result;
-	}
-
-	/**
-	 * Format the document to a relative path within the project, including the project name in the result
-	 * 
-	 * @param projectURI
-	 * @param document
-	 * @return
-	 */
-	protected String getDocumentDisplayName(URI projectURI, String document)
-	{
-		String prefix = (projectURI != null) ? URIUtil.decodeURI(projectURI.toString()) : null;
-
-		// back up one segment so we include the project name in the document
-		if (prefix != null && prefix.length() > 2)
-		{
-			int index = prefix.lastIndexOf('/', prefix.length() - 2);
-
-			if (index != -1 && index > 0)
-			{
-				prefix = prefix.substring(0, index - 1);
-			}
-		}
-
-		String result = URIUtil.decodeURI(document);
-
-		if (prefix != null && result.startsWith(prefix))
-		{
-			result = result.substring(prefix.length() + 1);
-		}
-
-		return result;
+		processPropertyElements(elements, node);
 	}
 
 	/*
@@ -312,114 +467,8 @@ public class JSHyperlinkCollector extends JSTreeWalker
 	{
 		if (node.contains(offset))
 		{
-			JSScope globalScope = ast.getGlobals();
-			JSScope activeScope = globalScope.getScopeAtOffset(offset);
-			JSPropertyCollection properties = activeScope.getSymbol(node.getText());
-
-			if (properties != null)
-			{
-				for (JSNode value : properties.getValues())
-				{
-					IParseNode parent = value.getParent();
-
-					switch (parent.getNodeType())
-					{
-						case IJSNodeTypes.PARAMETERS:
-						{
-							IRegion hyperlinkRegion = getNodeRegion(node);
-							String linkType = "parameter";
-							URI projectURI = EditorUtil.getProjectURI(editor);
-							String editorURI = EditorUtil.getURI(editor).toString();
-							String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
-							IRegion targetRegion = getNodeRegion(value);
-
-							addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
-									targetRegion));
-							break;
-						}
-
-						case IJSNodeTypes.DECLARATION:
-						{
-							JSNode targetIdentifier = (JSNode) value.getParent().getFirstChild();
-
-							// NOTE: don't jump to self
-							if (targetIdentifier != node)
-							{
-								IRegion hyperlinkRegion = getNodeRegion(node);
-								String linkType = "local";
-								URI projectURI = EditorUtil.getProjectURI(editor);
-								String editorURI = EditorUtil.getURI(editor).toString();
-								String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
-								IRegion targetRegion = getNodeRegion(targetIdentifier);
-
-								addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
-										targetRegion));
-							}
-							break;
-						}
-
-						default:
-							if (value.getNodeType() == IJSNodeTypes.ASSIGN)
-							{
-								JSNode targetIdentifier = (JSNode) value.getFirstChild();
-
-								// NOTE: don't jump to self
-								if (targetIdentifier != node)
-								{
-									IRegion hyperlinkRegion = getNodeRegion(node);
-									String linkType = "local";
-									URI projectURI = EditorUtil.getProjectURI(editor);
-									String editorURI = EditorUtil.getURI(editor).toString();
-									String hyperlinkText = getDocumentDisplayName(projectURI, editorURI);
-									IRegion targetRegion = getNodeRegion(targetIdentifier);
-
-									addHyperlink(new JSHyperlink(hyperlinkRegion, linkType, hyperlinkText, editorURI,
-											targetRegion));
-								}
-							}
-					}
-				}
-			}
-
-			IParseNode parent = node.getParent();
-			boolean valid = false;
-
-			if (parent instanceof JSParseRootNode)
-			{
-				valid = true;
-			}
-			else if (parent instanceof JSNode)
-			{
-				switch (parent.getNodeType())
-				{
-					case IJSNodeTypes.ARGUMENTS:
-					case IJSNodeTypes.CONSTRUCT:
-					case IJSNodeTypes.INVOKE:
-					case IJSNodeTypes.RETURN:
-					case IJSNodeTypes.STATEMENTS:
-						valid = true;
-						break;
-
-					case IJSNodeTypes.GET_PROPERTY:
-						// walk up tree until we find the first node that is not part of a series of get-properties
-						while (parent != null && parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
-						{
-							parent = parent.getParent();
-						}
-
-						// don't create links on properties that are on LHS of assignments
-						if (parent == null || parent.getNodeType() != IJSNodeTypes.ASSIGN)
-						{
-							valid = true;
-						}
-						break;
-				}
-			}
-
-			if (valid)
-			{
-				processLink(node);
-			}
+			processEditorSymbols(node);
+			processProjectGlobals(node);
 		}
 	}
 

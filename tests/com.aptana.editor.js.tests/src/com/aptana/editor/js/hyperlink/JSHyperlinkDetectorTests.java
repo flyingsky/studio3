@@ -128,7 +128,7 @@ public class JSHyperlinkDetectorTests extends JSEditorBasedTests
 	public void testLocalDeclaration()
 	{
 		String resource = "hyperlinks/localDeclaration.js";
-		JSHyperlink link = new JSHyperlink(new Region(42, 3), "local", resource, resource, new Region(22, 3));
+		JSHyperlink link = new JSHyperlink(new Region(42, 3), "local declaration", resource, resource, new Region(22, 3));
 
 		assertHyperlinks(resource, link);
 	}
@@ -136,7 +136,7 @@ public class JSHyperlinkDetectorTests extends JSEditorBasedTests
 	public void testLocalAssignment()
 	{
 		String resource = "hyperlinks/localAssignment.js";
-		JSHyperlink link = new JSHyperlink(new Region(42, 3), "local", resource, resource, new Region(18, 3));
+		JSHyperlink link = new JSHyperlink(new Region(38, 3), "local assignment", resource, resource, new Region(18, 3));
 
 		assertHyperlinks(resource, link);
 	}

@@ -23,7 +23,6 @@ import com.aptana.parsing.ast.IParseNode;
 
 public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 {
-
 	/*
 	 * (non-Javadoc)
 	 * @see org.eclipse.jface.text.hyperlink.IHyperlinkDetector#detectHyperlinks(org.eclipse.jface.text.ITextViewer,
@@ -77,6 +76,8 @@ public class JSHyperlinkDetector extends AbstractHyperlinkDetector
 	}
 
 	/**
+	 * processAST
+	 * 
 	 * @param editor
 	 * @param ast
 	 * @param offset
