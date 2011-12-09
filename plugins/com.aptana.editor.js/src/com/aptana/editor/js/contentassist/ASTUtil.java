@@ -39,7 +39,7 @@ import com.aptana.parsing.lexer.Lexeme;
 /**
  * ASTUtil
  */
-public class ParseUtil
+public class ASTUtil
 {
 	private static class FunctionParameterParser
 	{
@@ -430,7 +430,7 @@ public class ParseUtil
 
 		if (getPropertyNode != null)
 		{
-			JSScope localScope = ParseUtil.getScopeAtOffset(targetNode, offset);
+			JSScope localScope = ASTUtil.getScopeAtOffset(targetNode, offset);
 
 			if (localScope != null)
 			{
@@ -495,7 +495,7 @@ public class ParseUtil
 		JSScope result = null;
 
 		// grab global scope
-		JSScope global = ParseUtil.getGlobalScope(node);
+		JSScope global = ASTUtil.getGlobalScope(node);
 
 		if (global != null)
 		{
@@ -510,7 +510,7 @@ public class ParseUtil
 	/**
 	 * Prevent instantiation of this class
 	 */
-	private ParseUtil()
+	private ASTUtil()
 	{
 	}
 }
