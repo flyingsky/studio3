@@ -319,16 +319,28 @@ public class JSHyperlinkCollector extends JSTreeWalker
 					break;
 
 				case IJSNodeTypes.GET_PROPERTY:
-					// walk up tree until we find the first node that is not part of a series of get-properties
-					while (parent != null && parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
-					{
-						parent = parent.getParent();
-					}
+					IParseNode grandparent = (parent != null) ? parent.getParent() : null;
 
-					// don't create links on the last property of symbols on the LHS of assignments
-					if (parent == null || parent.getNodeType() != IJSNodeTypes.ASSIGN)
+					// Any property that is on the "left" of the dot is a potential link. However, we have more criteria
+					// for the last property (see else-clause below)
+					if (node.getIndex() == 0
+							|| (parent != null && grandparent != null && grandparent.getNodeType() == IJSNodeTypes.GET_PROPERTY))
 					{
 						valid = true;
+					}
+					else
+					{
+						// walk up tree until we find the first node that is not part of a series of get-properties
+						while (parent != null && parent.getNodeType() == IJSNodeTypes.GET_PROPERTY)
+						{
+							parent = parent.getParent();
+						}
+
+						// don't create links on the last property of symbols on the LHS of assignments
+						if (parent == null || parent.getNodeType() != IJSNodeTypes.ASSIGN)
+						{
+							valid = true;
+						}
 					}
 					break;
 			}
