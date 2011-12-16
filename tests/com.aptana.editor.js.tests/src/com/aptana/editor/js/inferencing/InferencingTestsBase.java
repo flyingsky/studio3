@@ -29,6 +29,7 @@ import org.eclipse.core.runtime.Platform;
 
 import com.aptana.core.util.IOUtil;
 import com.aptana.core.util.ResourceUtil;
+import com.aptana.core.util.StringUtil;
 import com.aptana.editor.js.JSPlugin;
 import com.aptana.editor.js.JSTypeConstants;
 import com.aptana.editor.js.contentassist.index.JSFileIndexingParticipant;
@@ -49,11 +50,11 @@ public abstract class InferencingTestsBase extends TestCase
 	{
 		public void indexTree(IFileStore file, String source, Index index, JSParseRootNode root)
 		{
-			this.processParseResults(file, source, index, root, new NullProgressMonitor());
+			processParseResults(file, source, index, root, new NullProgressMonitor());
 		}
 	}
 
-	private JSIndexReader _reader;
+	private JSIndexReader reader;
 	
 	/**
 	 * getContent
@@ -63,11 +64,12 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	protected String getContent(IFileStore file)
 	{
-		String result = "";
+		String result = StringUtil.EMPTY;
 
 		try
 		{
 			InputStream input = file.openInputStream(EFS.NONE, new NullProgressMonitor());
+
 			result = IOUtil.read(input);
 		}
 		catch (CoreException e)
@@ -97,10 +99,10 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	protected JSScope getGlobals(String source)
 	{
-		IParseNode root = this.getParseRootNode(source);
+		IParseNode root = getParseRootNode(source);
 		assertTrue(root instanceof JSParseRootNode);
 
-		return this.getGlobals((JSParseRootNode) root);
+		return getGlobals((JSParseRootNode) root);
 	}
 
 	/**
@@ -110,7 +112,7 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	protected Index getIndex()
 	{
-		URI indexURI = this.getIndexURI();
+		URI indexURI = getIndexURI();
 		Index result = null;
 
 		if (indexURI != null)
@@ -179,7 +181,7 @@ public abstract class InferencingTestsBase extends TestCase
 	{
 		String source = getContent(store);
 		
-		IParseNode root = this.getParseRootNode(source);
+		IParseNode root = getParseRootNode(source);
 		assertNotNull(root);
 		assertTrue(root instanceof JSParseRootNode);
 
@@ -187,14 +189,14 @@ public abstract class InferencingTestsBase extends TestCase
 		assertNotNull(statement);
 		assertTrue(statement instanceof JSNode);
 
-		JSScope globals = this.getGlobals((JSParseRootNode) root);
+		JSScope globals = getGlobals((JSParseRootNode) root);
 		assertNotNull(globals);
 
 		Indexer indexer = new Indexer();		
 		
-		indexer.indexTree(store, source, this.getIndex(), (JSParseRootNode) root);
+		indexer.indexTree(store, source, getIndex(), (JSParseRootNode) root);
 
-		return this.getTypes(globals, (JSNode) statement);
+		return getTypes(globals, (JSNode) statement);
 	}
 
 	protected IFileStore getFileStore(IPath path)
@@ -261,7 +263,7 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	protected List<TypeElement> getType(String typeName)
 	{
-		return this._reader.getType(this.getIndex(), typeName, true);
+		return reader.getType(getIndex(), typeName, true);
 	}
 
 	/**
@@ -272,7 +274,7 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	protected List<String> getTypes(JSScope globals, JSNode node)
 	{
-		JSNodeTypeInferrer walker = new JSNodeTypeInferrer(globals, this.getIndex(), this.getLocation());
+		JSNodeTypeInferrer walker = new JSNodeTypeInferrer(globals, getIndex(), getLocation());
 
 		node.accept(walker);
 
@@ -291,7 +293,7 @@ public abstract class InferencingTestsBase extends TestCase
 
 		for (IParseNode node : nodes)
 		{
-			JSNodeTypeInferrer walker = new JSNodeTypeInferrer(globals, this.getIndex(), this.getLocation());
+			JSNodeTypeInferrer walker = new JSNodeTypeInferrer(globals, getIndex(), getLocation());
 
 			assertTrue(node instanceof JSNode);
 
@@ -311,13 +313,13 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	public void lastStatementTypeTests(String rawSource, String... types)
 	{
-		List<String> statementTypes = this.getLastStatementTypes(rawSource);
+		List<String> statementTypes = getLastStatementTypes(rawSource);
 		assertStatementTypes(statementTypes, types);
 	}
 	
 	public void lastStatementTypeTests(IPath path, String... types)
 	{
-		List<String> statementTypes = this.getLastStatementTypes(path);
+		List<String> statementTypes = getLastStatementTypes(path);
 		assertStatementTypes(statementTypes, types);
 	}
 	
@@ -366,7 +368,7 @@ public abstract class InferencingTestsBase extends TestCase
 		// TODO Auto-generated method stub
 		super.setUp();
 
-		this._reader = new JSIndexReader();
+		reader = new JSIndexReader();
 	}
 
 	/**
@@ -379,7 +381,7 @@ public abstract class InferencingTestsBase extends TestCase
 	{
 		assertNotNull(typeName);
 
-		this.structureTests(this.getType(typeName), propertyNames);
+		structureTests(getType(typeName), propertyNames);
 	}
 
 	/**
@@ -421,9 +423,9 @@ public abstract class InferencingTestsBase extends TestCase
 	@Override
 	protected void tearDown() throws Exception
 	{
-		this._reader = null;
+		reader = null;
 
-		URI indexURI = this.getIndexURI();
+		URI indexURI = getIndexURI();
 
 		if (indexURI != null)
 		{
@@ -442,7 +444,7 @@ public abstract class InferencingTestsBase extends TestCase
 	 */
 	public void varTypeTests(String source, String symbol, String... types)
 	{
-		JSScope globals = this.getGlobals(source);
+		JSScope globals = getGlobals(source);
 
 		assertTrue(globals.hasLocalSymbol(symbol));
 		JSPropertyCollection object = globals.getSymbol(symbol);
@@ -451,7 +453,7 @@ public abstract class InferencingTestsBase extends TestCase
 		assertNotNull(values);
 		assertEquals(1, values.size());
 
-		List<String> symbolTypes = this.getTypes(globals, values);
+		List<String> symbolTypes = getTypes(globals, values);
 		assertNotNull(types);
 		assertEquals(types.length, symbolTypes.size());
 
