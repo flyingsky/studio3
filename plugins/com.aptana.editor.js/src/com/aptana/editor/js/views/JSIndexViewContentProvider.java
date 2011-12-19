@@ -7,7 +7,6 @@
  */
 package com.aptana.editor.js.views;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,10 +14,11 @@ import org.eclipse.core.resources.IProject;
 import org.eclipse.jface.viewers.ITreeContentProvider;
 import org.eclipse.jface.viewers.Viewer;
 
-import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
+import com.aptana.core.util.CollectionsUtil;
 import com.aptana.editor.js.contentassist.model.ClassElement;
+import com.aptana.editor.js.contentassist.model.ClassGroupElement;
+import com.aptana.editor.js.contentassist.model.JSElement;
 import com.aptana.editor.js.contentassist.model.TypeElement;
-import com.aptana.editor.js.inferencing.JSTypeUtil;
 import com.aptana.index.core.Index;
 import com.aptana.index.core.IndexManager;
 
@@ -44,14 +44,31 @@ public class JSIndexViewContentProvider implements ITreeContentProvider
 	{
 		List<? extends Object> result = Collections.emptyList();
 
-		if (parentElement instanceof ClassElement)
+		if (parentElement instanceof JSElement)
+		{
+			JSElement root = (JSElement) parentElement;
+
+			// @formatter:off
+			result = CollectionsUtil.newList(
+				new ClassGroupElement("Workspace Globals", root.getWorkspaceGlobalClasses()),
+				new ClassGroupElement("Project Globals", root.getProjectGlobalClasses())
+			);
+			// @formatter:on
+		}
+		else if (parentElement instanceof ClassGroupElement)
+		{
+			ClassGroupElement group = (ClassGroupElement) parentElement;
+
+			result = group.getClasses();
+		}
+		else if (parentElement instanceof ClassElement)
 		{
 			TypeElement type = (ClassElement) parentElement;
 
 			result = type.getProperties();
 		}
 
-		return result.toArray();
+		return result.toArray(new Object[result.size()]);
 	}
 
 	/*
@@ -60,23 +77,21 @@ public class JSIndexViewContentProvider implements ITreeContentProvider
 	 */
 	public Object[] getElements(Object inputElement)
 	{
-		List<ClassElement> classes = Collections.emptyList();
+		Object[] result;
 
 		if (inputElement instanceof IProject)
 		{
 			IProject project = (IProject) inputElement;
 			Index index = IndexManager.getInstance().getIndex(project.getLocationURI());
-			JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-			List<TypeElement> types = new ArrayList<TypeElement>();
 
-			// TODO: add preference to show/hide types from the built-in metadata
-			types.addAll(queryHelper.getTypes());
-			types.addAll(queryHelper.getTypes(index));
-
-			classes = JSTypeUtil.typesToClasses(types);
+			result = new Object[] { new JSElement(index) };
+		}
+		else
+		{
+			result = new Object[0];
 		}
 
-		return classes.toArray();
+		return result;
 	}
 
 	/*
