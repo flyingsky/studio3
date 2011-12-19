@@ -272,9 +272,14 @@ public class JSHyperlinkCollector extends JSTreeWalker
 
 					case IJSNodeTypes.DECLARATION:
 					{
-						JSNode targetIdentifier = (JSNode) value.getParent().getFirstChild();
+						// prevent jumping to LHS when trying to generate a link from RHS with same name as identifier
+						// for example: var is = ABC.DEF.i|s
+						if (!parent.contains(node.getStartingOffset()))
+						{
+							JSNode targetIdentifier = (JSNode) value.getParent().getFirstChild();
 
-						addHyperlink(node, targetIdentifier, "local declaration");
+							addHyperlink(node, targetIdentifier, "local declaration");
+						}
 						break;
 					}
 
