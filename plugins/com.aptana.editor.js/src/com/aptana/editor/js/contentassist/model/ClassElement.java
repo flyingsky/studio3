@@ -13,6 +13,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.aptana.core.util.StringUtil;
+
 /**
  * ClassElement
  */
@@ -55,6 +57,32 @@ public class ClassElement extends TypeElement
 
 			instanceTypes.add(type);
 		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		boolean result = false;
+
+		if (obj instanceof ClassElement)
+		{
+			ClassElement element = (ClassElement) obj;
+
+			// NOTE: This model element is only being used in the Index View which currently exists for debugging
+			// purposes only. TreeViews use "equals" to find nodes during selection, so we essentially only need to
+			// compare label names
+			result = StringUtil.areEqual(getName(), element.getName());
+		}
+		else
+		{
+			result = super.equals(obj);
+		}
+
+		return result;
 	}
 
 	/*
