@@ -160,18 +160,18 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 				this._properties = new ArrayList<PropertyElement>();
 			}
 
-			int index = this.getPropertyIndex(property.getName());
-
-			if (index >= 0)
-			{
-				// replace existing property with the same name
-				this._properties.set(index, property);
-			}
-			else
-			{
+			// int index = this.getPropertyIndex(property.getName());
+			//
+			// if (index >= 0)
+			// {
+			// // replace existing property with the same name
+			// this._properties.set(index, property);
+			// }
+			// else
+			// {
 				// add to the end of our list
 				this._properties.add(property);
-			}
+			// }
 
 			property.setOwningType(this.getName());
 		}
