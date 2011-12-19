@@ -196,6 +196,33 @@ public class PropertyElement extends BaseElement<PropertyElement.Property>
 
 	/*
 	 * (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	@Override
+	public int hashCode()
+	{
+		return toSource().hashCode();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	@Override
+	public boolean equals(Object obj)
+	{
+		if (obj instanceof PropertyElement)
+		{
+			return StringUtil.areEqual(toSource(), ((PropertyElement) obj).toSource());
+		}
+		else
+		{
+			return super.equals(obj);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.aptana.editor.js.contentassist.model.BaseElement#fromJSON(java.util.Map)
 	 */
 	@SuppressWarnings("rawtypes")

@@ -9,6 +9,7 @@ package com.aptana.editor.js.contentassist.model;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -91,7 +92,8 @@ public class ClassElement extends TypeElement
 	@Override
 	public List<PropertyElement> getProperties()
 	{
-		List<PropertyElement> result = new ArrayList<PropertyElement>();
+		// NOTE: use linked hash set to both preserve order and to remove duplicates
+		Set<PropertyElement> result = new LinkedHashSet<PropertyElement>();
 
 		if (classTypes != null)
 		{
@@ -109,7 +111,7 @@ public class ClassElement extends TypeElement
 			}
 		}
 
-		return result;
+		return new ArrayList<PropertyElement>(result);
 	}
 
 	/*
