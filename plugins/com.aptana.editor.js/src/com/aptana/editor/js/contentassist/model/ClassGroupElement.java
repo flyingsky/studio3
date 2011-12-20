@@ -7,7 +7,9 @@
  */
 package com.aptana.editor.js.contentassist.model;
 
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ClassGroupElement
@@ -21,6 +23,13 @@ public class ClassGroupElement extends BaseElement<ClassGroupElement.Property>
 			public Object getPropertyValue(ClassGroupElement node)
 			{
 				return node.getName();
+			}
+		},
+		TYPE_COUNT("Type Count")
+		{
+			public Object getPropertyValue(ClassGroupElement node)
+			{
+				return node.getClasses().size();
 			}
 		};
 
@@ -57,5 +66,15 @@ public class ClassGroupElement extends BaseElement<ClassGroupElement.Property>
 	public List<ClassElement> getClasses()
 	{
 		return classes;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.BaseElement#getPropertyInfoSet()
+	 */
+	@Override
+	protected Set<Property> getPropertyInfoSet()
+	{
+		return EnumSet.allOf(Property.class);
 	}
 }
