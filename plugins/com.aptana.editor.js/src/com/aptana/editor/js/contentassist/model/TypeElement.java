@@ -29,6 +29,13 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 				return node.getName();
 			}
 		},
+		PARENT_TYPES("Parent Types")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return StringUtil.join(",", node.getParentTypes());
+			}
+		},
 		DESCRIPTION("Description")
 		{
 			public Object getPropertyValue(TypeElement node)
@@ -43,11 +50,25 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 				return StringUtil.join(", ", node.getDocuments());
 			}
 		},
+		EVENT_COUNT("Event Count")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return node.getEvents().size();
+			}
+		},
 		PROPERTY_COUNT("Property Count")
 		{
 			public Object getPropertyValue(TypeElement node)
 			{
 				return node.getProperties().size();
+			}
+		},
+		DEPRECATED("Deprecated")
+		{
+			public Object getPropertyValue(TypeElement node)
+			{
+				return node.isDeprecated();
 			}
 		};
 
