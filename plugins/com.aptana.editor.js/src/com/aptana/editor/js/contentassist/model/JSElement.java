@@ -28,6 +28,21 @@ public class JSElement extends BaseElement<JSElement.Property>
 			{
 				return node.getName();
 			}
+		},
+		INDEX("Index File")
+		{
+			public Object getPropertyValue(JSElement node)
+			{
+				return node.getIndex().toString();
+			}
+		},
+		CHILD_COUNT("Child Count")
+		{
+			public Object getPropertyValue(JSElement node)
+			{
+				// TODO: don't emit children that have zero classes?
+				return 2;
+			}
 		};
 
 		private String header;
@@ -45,12 +60,33 @@ public class JSElement extends BaseElement<JSElement.Property>
 
 	private Index index;
 
+	/**
+	 * An element used to group JS content in an Index
+	 * 
+	 * @param index
+	 *            The index that contains JS content
+	 */
 	public JSElement(Index index)
 	{
 		this.index = index;
 		setName("JS");
 	}
 
+	/**
+	 * Returns the element associated with this element
+	 * 
+	 * @return Returns an Index
+	 */
+	public Index getIndex()
+	{
+		return index;
+	}
+
+	/**
+	 * Return a list of class elements from the workspace global area (JS metadata)
+	 * 
+	 * @return Returns a potentially empty, non-null list of ClassElements
+	 */
 	public List<ClassElement> getWorkspaceGlobalClasses()
 	{
 		JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
@@ -59,6 +95,11 @@ public class JSElement extends BaseElement<JSElement.Property>
 		return JSTypeUtil.typesToClasses(types);
 	}
 
+	/**
+	 * Return a list of class elements from the project area
+	 * 
+	 * @return Returns a potentially empty, non-null list of ClassElements
+	 */
 	public List<ClassElement> getProjectGlobalClasses()
 	{
 		JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
