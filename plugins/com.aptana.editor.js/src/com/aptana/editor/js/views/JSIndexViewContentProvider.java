@@ -7,6 +7,7 @@
  */
 package com.aptana.editor.js.views;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,6 +18,7 @@ import org.eclipse.jface.viewers.Viewer;
 import com.aptana.core.util.CollectionsUtil;
 import com.aptana.editor.js.contentassist.model.ClassElement;
 import com.aptana.editor.js.contentassist.model.ClassGroupElement;
+import com.aptana.editor.js.contentassist.model.EventElement;
 import com.aptana.editor.js.contentassist.model.JSElement;
 import com.aptana.editor.js.contentassist.model.TypeElement;
 import com.aptana.index.core.Index;
@@ -64,8 +66,20 @@ public class JSIndexViewContentProvider implements ITreeContentProvider
 		else if (parentElement instanceof ClassElement)
 		{
 			TypeElement type = (ClassElement) parentElement;
+			// NOTE: have to do this "temp" acrobatics to make the compiler happy, due to use of generics and differing
+			// return types when grabbing properties vs events
+			List<Object> temp = new ArrayList<Object>();
 
-			result = type.getProperties();
+			temp.addAll(type.getProperties());
+			temp.addAll(type.getEvents());
+
+			result = temp;
+		}
+		else if (parentElement instanceof EventElement)
+		{
+			EventElement event = (EventElement) parentElement;
+
+			result = event.getProperties();
 		}
 
 		return result.toArray(new Object[result.size()]);
