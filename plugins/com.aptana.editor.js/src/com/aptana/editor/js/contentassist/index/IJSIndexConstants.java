@@ -27,7 +27,7 @@ public interface IJSIndexConstants
 	// 0.24 - Fix String.fromCharCode
 	// 0.25 - Fix document.body type
 	// 0.26 - Fix parsing of arrays in this format: IDENT LPAREN RPAREN
-	// 0.27 - Add parent types to serialization of type elements
+	// 0.27 - Include events when reading/writing types from/to indexes
 	public static final double INDEX_VERSION = 0.27;
 
 	// for debugging, comment the line above, and uncomment the following
@@ -45,13 +45,15 @@ public interface IJSIndexConstants
 	static final String TYPE = PREFIX + "type"; //$NON-NLS-1$
 	static final String FUNCTION = PREFIX + "function"; //$NON-NLS-1$
 	static final String PROPERTY = PREFIX + "property"; //$NON-NLS-1$
+	static final String EVENT = PREFIX + "event"; //$NON-NLS-1$
 
 	// @formatter:off
 	static final String[] ALL_CATEGORIES = new String[]
 	{
 		TYPE,
 		FUNCTION,
-		PROPERTY
+		PROPERTY,
+		EVENT
 	};
 	// @formatter:on
 

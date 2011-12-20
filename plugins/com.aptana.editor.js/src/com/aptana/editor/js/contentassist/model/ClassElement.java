@@ -115,6 +115,62 @@ public class ClassElement extends TypeElement
 
 	/*
 	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.TypeElement#getEvents()
+	 */
+	@Override
+	public List<EventElement> getEvents()
+	{
+		Set<EventElement> result = new LinkedHashSet<EventElement>();
+
+		if (classTypes != null)
+		{
+			for (TypeElement classType : classTypes)
+			{
+				result.addAll(classType.getEvents());
+			}
+		}
+
+		if (instanceTypes != null)
+		{
+			for (TypeElement instanceType : instanceTypes)
+			{
+				result.addAll(instanceType.getEvents());
+			}
+		}
+
+		return new ArrayList<EventElement>(result);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.TypeElement#getParentTypes()
+	 */
+	@Override
+	public List<String> getParentTypes()
+	{
+		Set<String> result = new LinkedHashSet<String>();
+
+		if (classTypes != null)
+		{
+			for (TypeElement classType : classTypes)
+			{
+				result.addAll(classType.getParentTypes());
+			}
+		}
+
+		if (instanceTypes != null)
+		{
+			for (TypeElement instanceType : instanceTypes)
+			{
+				result.addAll(instanceType.getParentTypes());
+			}
+		}
+
+		return new ArrayList<String>(result);
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see com.aptana.editor.js.contentassist.model.TypeElement#getProperties()
 	 */
 	@Override
