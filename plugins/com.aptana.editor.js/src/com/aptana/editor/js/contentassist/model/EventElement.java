@@ -8,8 +8,10 @@
 package com.aptana.editor.js.contentassist.model;
 
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.mortbay.util.ajax.JSON.Output;
 
@@ -21,8 +23,45 @@ import com.aptana.index.core.IndexUtil;
 /**
  * EventElement
  */
-public class EventElement extends BaseElement
+public class EventElement extends BaseElement<EventElement.Property>
 {
+	enum Property implements IPropertyInformation<EventElement>
+	{
+		NAME("Name")
+		{
+			public Object getPropertyValue(EventElement node)
+			{
+				return node.getName();
+			}
+		},
+		OWNING_TYPE("Owning Type")
+		{
+			public Object getPropertyValue(EventElement node)
+			{
+				return node.getOwningType();
+			}
+		},
+		PROPERTY_COUNT("Property Count")
+		{
+			public Object getPropertyValue(EventElement node)
+			{
+				return node.getProperties().size();
+			}
+		};
+
+		private String header;
+
+		private Property(String header) // $codepro.audit.disable unusedMethod
+		{
+			this.header = header;
+		}
+
+		public String getHeader()
+		{
+			return header;
+		}
+	}
+
 	private static final String OWNING_TYPE_PROPERTY = "owningType"; //$NON-NLS-1$
 	private static final String PROPERTIES_PROPERTY = "properties"; //$NON-NLS-1$
 
@@ -96,6 +135,16 @@ public class EventElement extends BaseElement
 	public List<EventPropertyElement> getProperties()
 	{
 		return CollectionsUtil.getListValue(this._properties);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see com.aptana.editor.js.contentassist.model.BaseElement#getPropertyInfoSet()
+	 */
+	@Override
+	protected Set<Property> getPropertyInfoSet()
+	{
+		return EnumSet.allOf(Property.class);
 	}
 
 	/**
