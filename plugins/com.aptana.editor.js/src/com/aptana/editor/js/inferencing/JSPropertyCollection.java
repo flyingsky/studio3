@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.aptana.core.util.SourcePrinter;
+import com.aptana.core.util.StringUtil;
 import com.aptana.editor.js.parsing.ast.JSNode;
 
 /**
@@ -24,6 +25,9 @@ public class JSPropertyCollection
 	private List<JSNode> values;
 	private List<String> types;
 	private Map<String, JSPropertyCollection> properties;
+
+	private String name;
+	private JSPropertyCollection parentProperty;
 
 	/**
 	 * addType
@@ -74,6 +78,56 @@ public class JSPropertyCollection
 	public void clearTypes()
 	{
 		types = null;
+	}
+
+	/**
+	 * getQualifiedName
+	 * 
+	 * @return
+	 */
+	public String getQualifiedName()
+	{
+		List<String> parts = new ArrayList<String>();
+		JSPropertyCollection current = this;
+
+		while (current != null)
+		{
+			String name = current.getName();
+
+			if (StringUtil.isEmpty(name))
+			{
+				break;
+			}
+			else
+			{
+				parts.add(name);
+				current = current.getParentProperty();
+			}
+		}
+
+		Collections.reverse(parts);
+
+		return StringUtil.join(".", parts);
+	}
+
+	/**
+	 * getName
+	 * 
+	 * @return
+	 */
+	public String getName()
+	{
+		return name;
+	}
+
+	/**
+	 * getParentProperty
+	 * 
+	 * @return
+	 */
+	public JSPropertyCollection getParentProperty()
+	{
+		return parentProperty;
 	}
 
 	/**
@@ -219,6 +273,9 @@ public class JSPropertyCollection
 			}
 
 			properties.put(name, property);
+
+			property.name = name;
+			property.parentProperty = this;
 		}
 	}
 
