@@ -98,6 +98,11 @@ public class JSSymbolTypeInferrer
 			}
 		}
 
+		if (StringUtil.isEmpty(name))
+		{
+			name = property.getQualifiedName();
+		}
+
 		// generate a unique name if we didn't find one
 		if (StringUtil.isEmpty(name))
 		{
@@ -542,7 +547,7 @@ public class JSSymbolTypeInferrer
 				else
 				{
 					// We're not sure of the value's type, so cache NO_TYPE on the property collection. This serves as a
-					// fallback type if none can be inferred. Once we're done procesing the node, we remove the cached
+					// fallback type if none can be inferred. Once we're done processing the node, we remove the cached
 					// type
 					property.addType(NO_TYPE);
 					inferrer.visit(value);
