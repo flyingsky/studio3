@@ -91,7 +91,6 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 	private static final String EXAMPLES_PROPERTY = "examples"; //$NON-NLS-1$
 	private static final String REMARKS_PROPERTY = "remarks"; //$NON-NLS-1$
 	private static final String DEPRECATED_PROPERTY = "deprecated"; //$NON-NLS-1$
-	private static final String PARENT_TYPE_PROPERTY = "parentTypes"; //$NON-NLS-1$
 
 	private List<String> _parentTypes;
 	private List<PropertyElement> _properties;
@@ -190,8 +189,8 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 			// }
 			// else
 			// {
-				// add to the end of our list
-				this._properties.add(property);
+			// add to the end of our list
+			this._properties.add(property);
 			// }
 
 			property.setOwningType(this.getName());
@@ -225,15 +224,7 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 	{
 		super.fromJSON(object);
 
-		if (object.containsKey(PARENT_TYPE_PROPERTY))
-		{
-			List<String> parentTypes = IndexUtil.createList(object.get(PARENT_TYPE_PROPERTY));
-
-			for (String parentType : parentTypes)
-			{
-				this.addParentType(parentType);
-			}
-		}
+		// NOTE: parent types are added to this type element when reading types from the JS index
 
 		if (object.containsKey(PROPERTIES_PROPERTY))
 		{
@@ -512,7 +503,7 @@ public class TypeElement extends BaseElement<TypeElement.Property>
 
 			properties.removeAll(functions);
 
-			out.add(PARENT_TYPE_PROPERTY, getParentTypes());
+			// NOTE: parent types are written to the index by JSIndexWriter, so we don't need to serialize that value
 			out.add(PROPERTIES_PROPERTY, properties);
 			out.add(FUNCTIONS_PROPERTY, functions);
 			out.add(EVENTS_PROPERTY, this.getEvents());
