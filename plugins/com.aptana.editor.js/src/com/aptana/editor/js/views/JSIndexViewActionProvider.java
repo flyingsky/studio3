@@ -42,42 +42,53 @@ public class JSIndexViewActionProvider implements IActionProvider
 
 			if (typeNames != null && !typeNames.isEmpty())
 			{
-				IAction action = new Action()
-				{
-					@Override
-					public void run()
-					{
-						TreeViewer treeViewer = view.getTreeViewer();
-
-						if (treeViewer != null)
-						{
-							Object input = treeViewer.getInput();
-
-							if (input instanceof IProject)
-							{
-								IProject project = (IProject) input;
-
-								Index index = IndexManager.getInstance().getIndex(project.getLocationURI());
-								JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
-								List<TypeElement> types = queryHelper.getTypes(index, typeNames.get(0), true);
-								List<ClassElement> classes = JSTypeUtil.typesToClasses(types);
-
-								if (classes != null && !classes.isEmpty())
-								{
-									ClassElement c = classes.get(0);
-
-									treeViewer.setSelection(new StructuredSelection(c), true);
-								}
-							}
-						}
-					}
-				};
-				action.setText("Jump to type");
-
-				return new IAction[] { action };
+				return new IAction[] { createAction(view, typeNames) };
 			}
 		}
 
 		return null;
+	}
+
+	/**
+	 * @param view
+	 * @param typeNames
+	 * @return
+	 */
+	protected IAction createAction(final IndexView view, final List<String> typeNames)
+	{
+		IAction action = new Action()
+		{
+			@Override
+			public void run()
+			{
+				TreeViewer treeViewer = view.getTreeViewer();
+
+				if (treeViewer != null)
+				{
+					Object input = treeViewer.getInput();
+
+					if (input instanceof IProject)
+					{
+						IProject project = (IProject) input;
+
+						Index index = IndexManager.getInstance().getIndex(project.getLocationURI());
+						JSIndexQueryHelper queryHelper = new JSIndexQueryHelper();
+						List<TypeElement> types = queryHelper.getTypes(index, typeNames.get(0), true);
+						List<ClassElement> classes = JSTypeUtil.typesToClasses(types);
+
+						if (classes != null && !classes.isEmpty())
+						{
+							ClassElement c = classes.get(0);
+
+							treeViewer.setSelection(new StructuredSelection(c), true);
+						}
+					}
+				}
+			}
+		};
+
+		action.setText("Jump to type");
+
+		return action;
 	}
 }
