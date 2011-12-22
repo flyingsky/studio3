@@ -680,6 +680,35 @@ public class JSNodeTypeInferrer extends JSTreeWalker
 		{
 			List<String> types = this.getTypes(child);
 
+			// NOTE: This is a special case for functions used as a RHS of assignments or as part of a property chain.
+			// If the invocation returns undefined, we change that to Object.
+			// TODO: As a refinement, we want to check that the function being called is not defined in the current
+			// scope
+			if (types.isEmpty())
+			{
+				IParseNode parent = node.getParent();
+
+				if (parent != null)
+				{
+					switch (parent.getNodeType())
+					{
+						case IJSNodeTypes.ASSIGN:
+							if (node.getIndex() == 1)
+							{
+								this.addType(JSTypeConstants.OBJECT_TYPE);
+							}
+							break;
+
+						case IJSNodeTypes.GET_PROPERTY:
+							this.addType(JSTypeConstants.OBJECT_TYPE);
+							break;
+
+						default:
+							break;
+					}
+				}
+			}
+
 			for (String typeName : types)
 			{
 				int index = typeName.indexOf(':');
@@ -692,6 +721,7 @@ public class JSNodeTypeInferrer extends JSTreeWalker
 					}
 				}
 			}
+
 		}
 	}
 
