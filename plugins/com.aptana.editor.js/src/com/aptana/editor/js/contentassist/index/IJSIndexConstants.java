@@ -27,7 +27,8 @@ public interface IJSIndexConstants
 	// 0.24 - Fix String.fromCharCode
 	// 0.25 - Fix document.body type
 	// 0.26 - Fix parsing of arrays in this format: IDENT LPAREN RPAREN
-	// 0.27 - Include events when reading/writing types from/to indexes
+	// 0.27 - Include events when reading/writing types from/to indexes. Generate "user type" names from context, if
+	// possible
 	public static final double INDEX_VERSION = 0.27;
 
 	// for debugging, comment the line above, and uncomment the following
