@@ -17,10 +17,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.NullProgressMonitor;
 
 import com.aptana.core.util.IOUtil;
-import com.aptana.editor.js.JSTypeConstants;
 import com.aptana.editor.js.contentassist.JSIndexQueryHelper;
 import com.aptana.editor.js.contentassist.model.PropertyElement;
 import com.aptana.editor.js.contentassist.model.ReturnTypeElement;
+import com.aptana.editor.js.contentassist.model.TypeElement;
 import com.aptana.editor.js.parsing.ast.JSParseRootNode;
 import com.aptana.index.core.Index;
 import com.aptana.parsing.ast.IParseNode;
@@ -55,6 +55,19 @@ public class DynamicTypeInferencingTests extends InferencingTestsBase
 		List<ReturnTypeElement> returnTypes = global.getTypes();
 		assertEquals(1, returnTypes.size());
 		ReturnTypeElement returnType = returnTypes.get(0);
-		assertTrue(returnType.getType().startsWith(JSTypeConstants.DYNAMIC_CLASS_PREFIX));
+		// assertTrue(returnType.getType().startsWith(JSTypeConstants.DYNAMIC_CLASS_PREFIX));
+		assertEquals("one", returnType.getType());
+
+		List<TypeElement> types = helper.getTypes(index, "one", true);
+		assertEquals(1, types.size());
+		TypeElement type = types.get(0);
+		assertEquals("one", type.getName());
+		List<PropertyElement> properties = type.getProperties();
+		assertEquals(1, properties.size());
+		PropertyElement property = properties.get(0);
+		assertEquals("two", type.getName());
+		List<String> typeNames = property.getTypeNames();
+		assertEquals(1, typeNames.size());
+		assertEquals("one.two", typeNames.get(0));
 	}
 }
